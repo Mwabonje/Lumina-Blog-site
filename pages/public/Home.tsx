@@ -12,8 +12,9 @@ const Home = () => {
     getPosts(PostStatus.PUBLISHED).then(setPosts);
   }, []);
 
-  const featured = posts.find(p => p.id === 'featured-seo');
-  const gridPosts = posts.filter(p => p.id !== 'featured-seo');
+  // Dynamically select the newest post as featured, instead of relying on a hardcoded ID
+  const featured = posts.length > 0 ? posts[0] : undefined;
+  const gridPosts = posts.length > 0 ? posts.slice(1) : [];
 
   return (
     <PublicLayout>
@@ -38,9 +39,9 @@ const Home = () => {
         
         {/* Featured Section (Card with Image Left, Content Right) */}
         {featured && (
-          <div className="bg-white rounded-3xl p-6 md:p-8 shadow-xl shadow-blue-900/5 mb-16 flex flex-col md:flex-row gap-8 md:gap-12 items-center">
+          <div className="bg-white rounded-3xl p-6 md:p-8 shadow-xl shadow-blue-900/5 mb-16 flex flex-col md:flex-row gap-8 md:gap-12 items-center border border-white/50">
              <div className="w-full md:w-1/2">
-                <div className="rounded-2xl overflow-hidden h-[300px] md:h-[350px]">
+                <div className="rounded-2xl overflow-hidden h-[300px] md:h-[350px] shadow-lg">
                    <img 
                     src={featured.featuredImage} 
                     alt={featured.title} 
@@ -50,7 +51,7 @@ const Home = () => {
              </div>
              <div className="w-full md:w-1/2 flex flex-col items-start">
                 <div className="flex gap-3 mb-4 text-sm font-medium">
-                   <span className="text-gray-400">{new Date(featured.publishedAt!).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}</span>
+                   <span className="text-gray-400">{featured.publishedAt ? new Date(featured.publishedAt).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}) : ''}</span>
                    <span className="bg-blue-50 text-brand-blue px-3 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider">{featured.category}</span>
                 </div>
                 <Link to={`/blog/${featured.slug}`}>
@@ -58,17 +59,17 @@ const Home = () => {
                     {featured.title}
                   </h2>
                 </Link>
-                <p className="text-secondary text-base leading-relaxed mb-8">
+                <p className="text-secondary text-base leading-relaxed mb-8 line-clamp-3">
                   {featured.excerpt}
                 </p>
                 
                 <div className="flex items-center gap-3">
-                   <div className="w-10 h-10 rounded-full overflow-hidden">
+                   <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-slate-100">
                      <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(featured.authorName)}&background=0ea5e9&color=fff`} alt={featured.authorName} className="w-full h-full object-cover" />
                    </div>
                    <div>
                      <div className="text-sm font-bold text-primary">{featured.authorName}</div>
-                     <div className="text-xs text-gray-500">SEO Specialist</div>
+                     <div className="text-xs text-gray-500">Author</div>
                    </div>
                 </div>
              </div>
@@ -78,23 +79,14 @@ const Home = () => {
         {/* Grid Section */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {gridPosts.map(post => {
-            // Determine role based on category for demo visual consistency
-            let role = 'Author';
-            if (post.category === 'Social') role = 'Social Media Manager';
-            if (post.category === 'Content') role = 'Content Director';
-            if (post.category === 'Strategy') role = 'Digital Strategist';
-            if (post.category === 'Analytics') role = 'Analytics Expert';
-            if (post.category === 'ROI') role = 'Marketing Analyst';
-            if (post.category === 'Trends') role = 'Industry Analyst';
-
-            // Determine badge color style
+            // Determine badge color style based on category
             let badgeClass = "bg-blue-50 text-blue-600";
             if (post.category === 'Content') badgeClass = "bg-purple-50 text-purple-600";
             if (post.category === 'Strategy') badgeClass = "bg-emerald-50 text-emerald-600";
 
             return (
-              <article key={post.id} className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-xl transition-shadow duration-300 flex flex-col h-full border border-slate-100">
-                <Link to={`/blog/${post.slug}`} className="block overflow-hidden rounded-xl mb-6 h-52 relative group">
+              <article key={post.id} className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full border border-slate-100 group">
+                <Link to={`/blog/${post.slug}`} className="block overflow-hidden rounded-xl mb-6 h-52 relative">
                    <img 
                     src={post.featuredImage} 
                     alt={post.title} 
@@ -105,7 +97,7 @@ const Home = () => {
                 
                 <div className="flex-1 flex flex-col">
                   <div className="flex items-center gap-3 mb-4 text-xs font-medium">
-                     <span className="text-gray-400">{new Date(post.publishedAt!).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}</span>
+                     <span className="text-gray-400">{post.publishedAt ? new Date(post.publishedAt).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}) : ''}</span>
                      <span className={`px-2.5 py-0.5 rounded-full uppercase tracking-wider font-bold ${badgeClass}`}>
                        {post.category}
                      </span>
@@ -122,12 +114,11 @@ const Home = () => {
                   </p>
                   
                   <div className="flex items-center gap-3 mt-auto pt-4 border-t border-slate-50">
-                    <div className="w-9 h-9 rounded-full overflow-hidden">
+                    <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-100">
                        <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(post.authorName)}&background=random`} alt={post.authorName} className="w-full h-full object-cover" />
                     </div>
                     <div>
                       <div className="text-sm font-bold text-primary">{post.authorName}</div>
-                      <div className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold">{role}</div>
                     </div>
                   </div>
                 </div>
@@ -135,19 +126,17 @@ const Home = () => {
             );
           })}
         </div>
-        
-        <div className="flex justify-center mt-12 gap-2">
-           <button className="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-400 hover:border-brand-blue hover:text-brand-blue transition">
-             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
-           </button>
-           <button className="w-10 h-10 flex items-center justify-center rounded-full bg-accent text-white font-bold shadow-lg shadow-accent/30">1</button>
-           <button className="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500 hover:border-brand-blue hover:text-brand-blue transition">2</button>
-           <button className="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500 hover:border-brand-blue hover:text-brand-blue transition">3</button>
-           <button className="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-400 hover:border-brand-blue hover:text-brand-blue transition">
-             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
-           </button>
-        </div>
 
+        {posts.length === 0 && (
+           <div className="text-center py-20">
+              <div className="inline-block p-4 rounded-full bg-slate-50 mb-4">
+                <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+              </div>
+              <h3 className="text-lg font-medium text-primary">No stories published yet</h3>
+              <p className="text-secondary mt-1">Check back soon for new insights.</p>
+           </div>
+        )}
+        
       </div>
     </PublicLayout>
   );

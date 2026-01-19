@@ -8,6 +8,7 @@ import SEOHead from '../../components/ui/SEOHead';
 const Dashboard = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadPosts();
@@ -15,15 +16,26 @@ const Dashboard = () => {
 
   const loadPosts = async () => {
     setLoading(true);
-    const data = await getPosts();
-    setPosts(data);
-    setLoading(false);
+    setError(null);
+    try {
+      const data = await getPosts();
+      setPosts(data);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Failed to connect to Supabase');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this post?')) {
-      await deletePost(id);
-      loadPosts();
+      try {
+        await deletePost(id);
+        loadPosts();
+      } catch (err: any) {
+        alert(`Failed to delete: ${err.message}`);
+      }
     }
   };
 
@@ -52,6 +64,27 @@ const Dashboard = () => {
           + New Story
         </Link>
       </div>
+
+      {error && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-8">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm leading-5 font-medium text-red-800">
+                Connection Error
+              </h3>
+              <div className="mt-2 text-sm leading-5 text-red-700">
+                <p>{error}</p>
+                <p className="mt-2 text-xs">Tip: Check your API Key and ensure RLS policies allow 'public' access in Supabase.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-lg shadow-sm border border-stone-200 overflow-hidden">
         {loading ? (
@@ -87,7 +120,7 @@ const Dashboard = () => {
                   </td>
                 </tr>
               ))}
-              {posts.length === 0 && (
+              {posts.length === 0 && !error && (
                 <tr>
                   <td colSpan={4} className="p-12 text-center text-stone-400">No content yet.</td>
                 </tr>

@@ -73,7 +73,8 @@ export const getPosts = async (status?: PostStatus): Promise<BlogPost[]> => {
 
   if (error) {
     console.error('Error fetching posts:', error);
-    return [];
+    // Throw error so the UI knows something went wrong (e.g. invalid key or permissions)
+    throw new Error(error.message);
   }
 
   return (data || []).map(mapRowToPost);
@@ -103,6 +104,7 @@ export const getPostById = async (id: string): Promise<BlogPost | undefined> => 
 
   if (error) {
     console.error('Error fetching post by id:', error);
+    // Don't throw here to allow "New Post" flow to work gracefully if ID not found
     return undefined;
   }
 
@@ -145,7 +147,5 @@ export const deletePost = async (id: string): Promise<void> => {
 };
 
 export const getCategories = async (): Promise<Category[]> => {
-  // Keeping categories in local storage/hardcoded for now as requested scope was "blog posts"
-  // but this ensures the app doesn't break.
   return JSON.parse(localStorage.getItem(STORAGE_KEY_CATEGORIES) || '[]');
 };
