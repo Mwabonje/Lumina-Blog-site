@@ -7,6 +7,7 @@ import Dashboard from './pages/admin/Dashboard';
 import Login from './pages/admin/Login';
 import PostEditor from './pages/admin/PostEditor';
 import { isAuthenticated } from './services/authService';
+import ScrollToTop from './components/ui/ScrollToTop';
 
 const PrivateRoute = () => {
   return isAuthenticated() ? <Outlet /> : <Navigate to="/admin/login" />;
@@ -15,6 +16,7 @@ const PrivateRoute = () => {
 const App: React.FC = () => {
   return (
     <HashRouter>
+      <ScrollToTop />
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
