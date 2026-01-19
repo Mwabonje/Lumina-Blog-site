@@ -65,8 +65,14 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       <ContactModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
 
       <footer className="bg-[#020617] text-gray-400 py-12 border-t border-gray-800">
-        <div className="max-w-7xl mx-auto px-6 text-center text-sm">
+        <div className="max-w-7xl mx-auto px-6 text-center text-sm flex flex-col items-center gap-4">
           <p>© {new Date().getFullYear()} Lumina Inc. All Rights Reserved.</p>
+          <Link 
+            to="/admin" 
+            className="text-gray-700 hover:text-gray-500 transition-colors text-xs font-medium"
+          >
+            Admin Login
+          </Link>
         </div>
       </footer>
     </div>
