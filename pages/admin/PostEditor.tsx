@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { BlogPost, ContentBlock, PostStatus, Category, AISuggestion, SEOData } from '../../types';
 import { getPostById, savePost, getCategories } from '../../services/blogService';
@@ -30,6 +30,10 @@ const PostEditor = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [saving, setSaving] = useState(false);
   
+  // Focus Management
+  const blockRefs = useRef<{ [key: string]: HTMLTextAreaElement | HTMLInputElement | null }>({});
+  const [focusBlockId, setFocusBlockId] = useState<string | null>(null);
+
   // Form State
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
@@ -91,6 +95,14 @@ const PostEditor = () => {
     };
     init();
   }, [id, isEditMode]);
+
+  // Handle auto-focusing new blocks
+  useEffect(() => {
+    if (focusBlockId && blockRefs.current[focusBlockId]) {
+      blockRefs.current[focusBlockId]?.focus();
+      setFocusBlockId(null);
+    }
+  }, [blocks, focusBlockId]);
 
   const handleAI = async () => {
     const contentText = blocks.map(b => b.content).join(' ');
@@ -160,6 +172,25 @@ const PostEditor = () => {
   };
 
   // Block Editor Helpers
+  const handleKeyDown = (e: React.KeyboardEvent, idx: number, type: ContentBlock['type']) => {
+    if (e.key === 'Enter') {
+      if (type === 'heading') {
+        e.preventDefault();
+        const newId = Date.now().toString() + Math.random();
+        const newBlock: ContentBlock = { 
+          id: newId, 
+          type: 'paragraph', 
+          content: '' 
+        };
+        
+        const newBlocks = [...blocks];
+        newBlocks.splice(idx + 1, 0, newBlock);
+        setBlocks(newBlocks);
+        setFocusBlockId(newId);
+      }
+    }
+  };
+
   const updateBlock = (idx: number, content: string) => {
     const newBlocks = [...blocks];
     newBlocks[idx].content = content;
@@ -449,9 +480,11 @@ const PostEditor = () => {
                       <div className="relative">
                         <div className="flex items-center gap-2 mb-3">
                            <input
+                            ref={el => { blockRefs.current[block.id] = el; }}
                             type="text"
                             value={block.content}
                             onChange={e => updateBlock(idx, e.target.value)}
+                            onKeyDown={e => handleKeyDown(e, idx, 'heading')}
                             placeholder="Heading..."
                             className="w-full text-2xl font-bold text-slate-800 border-none outline-none"
                            />
@@ -482,6 +515,7 @@ const PostEditor = () => {
                     )}
                     {block.type === 'paragraph' && (
                       <textarea
+                        ref={el => { blockRefs.current[block.id] = el; }}
                         value={block.content}
                         onChange={e => updateBlock(idx, e.target.value)}
                         onPaste={e => handlePaste(e, idx)}
@@ -550,7 +584,7 @@ const PostEditor = () => {
                           <div className="space-y-4">
                              <div className="flex flex-col items-center justify-center py-4">
                                 <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-3">
-                                  <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                  <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                 </div>
                                 <p className="text-sm text-slate-500 font-medium mb-1">Click to Upload Image</p>
                                 <p className="text-xs text-slate-400 mb-4">SVG, PNG, JPG or GIF (max. 3MB)</p>
@@ -580,6 +614,7 @@ const PostEditor = () => {
                     )}
                     {block.type === 'code' && (
                       <textarea
+                        ref={el => { blockRefs.current[block.id] = el; }}
                         value={block.content}
                         onChange={e => updateBlock(idx, e.target.value)}
                         placeholder="Paste code here..."
