@@ -7,6 +7,17 @@ import AdminLayout from '../../components/layout/AdminLayout';
 import SEOHead from '../../components/ui/SEOHead';
 import ArticleTemplate from '../../components/blog/ArticleTemplate';
 
+const AUTHOR_TITLES = [
+  'Author',
+  'SEO Specialist',
+  'Social Media Specialist',
+  'Content Strategist',
+  'Senior Editor',
+  'Marketing Director',
+  'Data Analyst',
+  'Guest Contributor'
+];
+
 const PostEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -24,6 +35,7 @@ const PostEditor = () => {
   const [slug, setSlug] = useState('');
   const [excerpt, setExcerpt] = useState('');
   const [authorName, setAuthorName] = useState('Admin User');
+  const [authorTitle, setAuthorTitle] = useState('Author');
   const [status, setStatus] = useState<PostStatus>(PostStatus.DRAFT);
   const [categoryId, setCategoryId] = useState('');
   const [blocks, setBlocks] = useState<ContentBlock[]>([]);
@@ -39,7 +51,6 @@ const PostEditor = () => {
     ogDescription: '',
     ogImage: ''
   });
-  // Helper for keyword input which is a string in UI but array in data
   const [keywordsInput, setKeywordsInput] = useState('');
 
   useEffect(() => {
@@ -56,6 +67,7 @@ const PostEditor = () => {
           setSlug(post.slug);
           setExcerpt(post.excerpt);
           setAuthorName(post.authorName || 'Admin User');
+          setAuthorTitle(post.authorTitle || 'Author');
           setStatus(post.status);
           setCategoryId(post.category);
           setBlocks(post.blocks);
@@ -99,7 +111,6 @@ const PostEditor = () => {
           metaTitle: suggestion.seo.metaTitle,
           metaDescription: suggestion.seo.metaDescription,
           keywords: newKeywords,
-          // Auto-fill Open Graph with same data by default for convenience
           ogTitle: suggestion.seo.ogTitle || suggestion.seo.metaTitle,
           ogDescription: suggestion.seo.ogDescription || suggestion.seo.metaDescription,
         }));
@@ -125,11 +136,12 @@ const PostEditor = () => {
         status,
         category: categoryId,
         featuredImage: featuredImage || 'https://picsum.photos/800/600',
-        authorId: 'admin-1', // Mock
+        authorId: 'admin-1',
         authorName: authorName,
+        authorTitle: authorTitle,
         publishedAt: status === PostStatus.PUBLISHED ? new Date().toISOString() : null,
         blocks,
-        readingTimeMinutes: 0, // Calculated in service
+        readingTimeMinutes: 0,
         tags: [],
         seo: {
           ...seo,
@@ -141,7 +153,7 @@ const PostEditor = () => {
       navigate('/admin/posts');
     } catch (err: any) {
       console.error(err);
-      alert(`Error saving post: ${err.message}\n\nPlease check your Database permissions (RLS) and API Key.`);
+      alert(`Error saving post: ${err.message}\n\nPlease check your Database permissions (RLS), API Key, and ensure you have added the 'author_title' column.`);
     } finally {
       setSaving(false);
     }
@@ -170,7 +182,6 @@ const PostEditor = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Use FileReader to convert image to Base64 for local storage display
     const reader = new FileReader();
     reader.onloadend = () => {
       if (typeof reader.result === 'string') {
@@ -198,7 +209,6 @@ const PostEditor = () => {
   const removeHeadingImage = (idx: number) => {
     const newBlocks = [...blocks];
     if (newBlocks[idx].metadata) {
-       // Keep other metadata, remove image
        const { image, ...rest } = newBlocks[idx].metadata!;
        newBlocks[idx].metadata = rest;
        setBlocks(newBlocks);
@@ -213,11 +223,9 @@ const PostEditor = () => {
     const selectionStart = target.selectionStart;
     const currentContent = blocks[idx].content;
 
-    // Split current content around cursor
     const textBefore = currentContent.slice(0, selectionStart);
     const textAfter = currentContent.slice(target.selectionEnd);
 
-    // Advanced Paste Parsing
     const lines = clipboardText.split(/\r?\n/);
     const parsedBlocks: ContentBlock[] = [];
     
@@ -236,7 +244,6 @@ const PostEditor = () => {
             });
           }
        } else {
-          // Paragraph
           const text = bufferContent.join(' ').trim();
           if (text) {
               parsedBlocks.push({
@@ -253,11 +260,10 @@ const PostEditor = () => {
     lines.forEach(line => {
        const trimmed = line.trim();
        if (!trimmed) {
-          flush(); // Empty line breaks blocks
+          flush();
           return;
        }
 
-       // 1. Explicit Header Detection (#)
        if (/^#{1,6}\s/.test(trimmed)) {
           flush();
           const level = (trimmed.match(/^#{1,6}/)?.[0].length || 2) as 1|2|3|4|5|6;
@@ -270,20 +276,16 @@ const PostEditor = () => {
           return;
        }
        
-       // 2. List Item Detection (* or -)
        if (/^[\*\-]\s/.test(trimmed)) {
           if (bufferType !== 'list') flush();
           bufferType = 'list';
-          // Store raw markdown content, do not convert to HTML tags
           bufferContent.push(trimmed.replace(/^[\*\-]\s+/, ''));
           return;
        }
 
-       // 3. Implicit Header Detection
-       // If we are starting a new block (buffer is empty/null), and line looks like a header
        if (bufferType === null) {
           const isShort = trimmed.length < 150;
-          const hasNoPeriod = !trimmed.endsWith('.'); // Headers rarely end in .
+          const hasNoPeriod = !trimmed.endsWith('.');
           
           if (isShort && hasNoPeriod) {
               parsedBlocks.push({
@@ -294,15 +296,10 @@ const PostEditor = () => {
               });
               return;
           }
-          
-          // Default to Paragraph
           bufferType = 'paragraph';
           bufferContent.push(trimmed);
        } else if (bufferType === 'list') {
-          // If we hit text while in list mode, assume it breaks the list
           flush();
-          
-          // Re-evaluate line for implicit header or paragraph
           const isShort = trimmed.length < 150;
           const hasNoPeriod = !trimmed.endsWith('.');
           
@@ -318,7 +315,6 @@ const PostEditor = () => {
               bufferContent.push(trimmed);
           }
        } else {
-          // Continue Paragraph
           bufferContent.push(trimmed);
        }
     });
@@ -326,16 +322,10 @@ const PostEditor = () => {
 
     if (parsedBlocks.length === 0) return;
 
-    // Apply changes to block list
     const updatedBlocks = [...blocks];
-    
-    // 1. Update current block to keep only textBefore
     updatedBlocks[idx] = { ...updatedBlocks[idx], content: textBefore };
-
-    // 2. Insert new blocks
     updatedBlocks.splice(idx + 1, 0, ...parsedBlocks);
 
-    // 3. If there was text after cursor, append it as a new paragraph
     if (textAfter.trim()) {
       updatedBlocks.splice(idx + 1 + parsedBlocks.length, 0, {
         id: Date.now().toString() + Math.random(),
@@ -344,7 +334,6 @@ const PostEditor = () => {
       });
     }
 
-    // Cleanup: If the original block became empty (cursor at start), remove it
     if (!textBefore.trim()) {
        updatedBlocks.splice(idx, 1);
     }
@@ -370,6 +359,7 @@ const PostEditor = () => {
       featuredImage: featuredImage,
       authorId: 'admin-1',
       authorName: authorName,
+      authorTitle: authorTitle,
       publishedAt: status === PostStatus.PUBLISHED ? new Date().toISOString() : null,
       blocks: blocks,
       readingTimeMinutes: readingTime,
@@ -629,16 +619,32 @@ const PostEditor = () => {
                     <option value={PostStatus.SCHEDULED}>Scheduled</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Author Name</label>
-                  <input 
-                    type="text" 
-                    value={authorName}
-                    onChange={e => setAuthorName(e.target.value)}
-                    className="w-full p-2 border border-slate-200 rounded-lg text-sm"
-                    placeholder="E.g. John Doe"
-                  />
+                
+                <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">Author Name</label>
+                      <input 
+                        type="text" 
+                        value={authorName}
+                        onChange={e => setAuthorName(e.target.value)}
+                        className="w-full p-2 border border-slate-200 rounded-lg text-sm"
+                        placeholder="E.g. John Doe"
+                      />
+                    </div>
+                     <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">Author Title</label>
+                      <select 
+                        value={authorTitle}
+                        onChange={e => setAuthorTitle(e.target.value)}
+                        className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-slate-50"
+                      >
+                         {AUTHOR_TITLES.map(title => (
+                           <option key={title} value={title}>{title}</option>
+                         ))}
+                      </select>
+                    </div>
                 </div>
+
                 <div>
                   <label className="block text-xs font-medium text-slate-500 mb-1">Category</label>
                   <select 

@@ -129,7 +129,10 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, previewMode = f
                      alt={post.authorName} 
                      className="w-8 h-8 rounded-full border border-white/20" 
                    />
-                   <span className="font-medium text-sm">{post.authorName || 'Admin'}</span>
+                   <div className="text-left">
+                      <div className="font-medium text-sm leading-tight">{post.authorName || 'Admin'}</div>
+                      <div className="text-xs text-brand-blue opacity-90">{post.authorTitle || 'Author'}</div>
+                   </div>
                 </div>
                 <span className="text-gray-600">•</span>
                 <time className="text-gray-400 text-sm">

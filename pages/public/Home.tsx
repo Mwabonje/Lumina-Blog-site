@@ -69,7 +69,7 @@ const Home = () => {
                    </div>
                    <div>
                      <div className="text-sm font-bold text-primary">{featured.authorName}</div>
-                     <div className="text-xs text-gray-500">Author</div>
+                     <div className="text-xs text-gray-500">{featured.authorTitle || 'Author'}</div>
                    </div>
                 </div>
              </div>
@@ -119,6 +119,7 @@ const Home = () => {
                     </div>
                     <div>
                       <div className="text-sm font-bold text-primary">{post.authorName}</div>
+                      <div className="text-xs text-gray-500">{post.authorTitle || 'Author'}</div>
                     </div>
                   </div>
                 </div>

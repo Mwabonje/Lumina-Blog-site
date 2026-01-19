@@ -44,6 +44,7 @@ export interface BlogPost {
   featuredImage: string;
   authorId: string;
   authorName: string;
+  authorTitle?: string; // New field for role (e.g. SEO Specialist)
   publishedAt: string | null; // ISO Date string
   scheduledFor?: string | null;
   status: PostStatus;

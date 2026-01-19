@@ -28,6 +28,7 @@ const mapRowToPost = (row: any): BlogPost => ({
   featuredImage: row.featured_image || '',
   authorId: row.author_id,
   authorName: row.author_name,
+  authorTitle: row.author_title || 'Author', // Default to 'Author' if missing
   publishedAt: row.published_at,
   scheduledFor: row.scheduled_for,
   status: row.status as PostStatus,
@@ -47,6 +48,7 @@ const mapPostToRow = (post: BlogPost) => ({
   featured_image: post.featuredImage,
   author_id: post.authorId,
   author_name: post.authorName,
+  author_title: post.authorTitle,
   published_at: post.publishedAt,
   scheduled_for: post.scheduledFor,
   status: post.status,
