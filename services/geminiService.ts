@@ -1,10 +1,22 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import { AISuggestion } from '../types';
 
-// Initialize the client with the API key from the environment variable.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Lazy initialize the client to prevent immediate crashes if env var is missing
+const getAIClient = () => {
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    console.warn("API_KEY is missing. AI features will not work.");
+    return null;
+  }
+  return new GoogleGenAI({ apiKey });
+};
 
 export const generateSEOSuggestions = async (content: string): Promise<AISuggestion> => {
+  const ai = getAIClient();
+  if (!ai) {
+    throw new Error("API Key missing. Please configure process.env.API_KEY");
+  }
+
   const model = "gemini-3-flash-preview";
   
   try {
