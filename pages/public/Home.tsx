@@ -9,7 +9,12 @@ const Home = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   
   useEffect(() => {
-    getPosts(PostStatus.PUBLISHED).then(setPosts);
+    const fetchPosts = () => getPosts(PostStatus.PUBLISHED).then(setPosts);
+    fetchPosts();
+
+    // Poll every 30 seconds to catch scheduled posts that just went live
+    const interval = setInterval(fetchPosts, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // Dynamically select the newest post as featured, instead of relying on a hardcoded ID

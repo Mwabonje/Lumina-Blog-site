@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { BlogPost, PostStatus } from '../../types';
 import { getPosts, deletePost } from '../../services/blogService';
@@ -11,29 +11,37 @@ const Dashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    loadPosts();
-  }, []);
-
-  const loadPosts = async () => {
-    setLoading(true);
-    setError(null);
+  const loadPosts = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    if (!silent) setError(null);
     try {
       const data = await getPosts();
       setPosts(data);
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'Failed to connect to Supabase');
+      if (!silent) setError(err.message || 'Failed to connect to Supabase');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadPosts();
+
+    // Poll every 10 seconds to check for scheduled posts becoming active
+    // The getPosts service handles the logic of checking timestamps and updating DB
+    const interval = setInterval(() => {
+      loadPosts(true);
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [loadPosts]);
 
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this post?')) {
       try {
         await deletePost(id);
-        loadPosts();
+        loadPosts(true); // Silent reload after delete
       } catch (err: any) {
         alert(`Failed to delete: ${err.message}`);
       }
