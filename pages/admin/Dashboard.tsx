@@ -130,7 +130,7 @@ const Dashboard = () => {
                 <tr>
                   <th className="p-5 font-bold text-xs text-stone-500 uppercase tracking-wider">Title</th>
                   <th className="p-5 font-bold text-xs text-stone-500 uppercase tracking-wider">Status</th>
-                  <th className="p-5 font-bold text-xs text-stone-500 uppercase tracking-wider">Published</th>
+                  <th className="p-5 font-bold text-xs text-stone-500 uppercase tracking-wider">Published/Scheduled</th>
                   <th className="p-5 font-bold text-xs text-stone-500 uppercase tracking-wider text-right">Actions</th>
                 </tr>
               </thead>
@@ -155,7 +155,19 @@ const Dashboard = () => {
                       <StatusBadge status={post.status} />
                     </td>
                     <td className="p-5 text-sm text-stone-500 font-medium whitespace-nowrap">
-                      {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : '—'}
+                      {post.publishedAt ? (
+                        post.status === PostStatus.SCHEDULED ? (
+                          new Date(post.publishedAt).toLocaleString('en-US', {
+                            year: 'numeric',
+                            month: 'numeric',
+                            day: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit'
+                          })
+                        ) : (
+                          new Date(post.publishedAt).toLocaleDateString()
+                        )
+                      ) : '—'}
                     </td>
                     <td className="p-5 text-right whitespace-nowrap space-x-2">
                       <Link 
