@@ -46,6 +46,11 @@ const PostEditor = () => {
   const [categoryId, setCategoryId] = useState('');
   const [blocks, setBlocks] = useState<ContentBlock[]>([]);
   const [featuredImage, setFeaturedImage] = useState('');
+  const [scheduledFor, setScheduledFor] = useState('');
+  
+  // Track original state to handle publish date logic correctly
+  const [originalStatus, setOriginalStatus] = useState<PostStatus>(PostStatus.DRAFT);
+  const [originalPublishedAt, setOriginalPublishedAt] = useState<string | null>(null);
   
   // Detailed SEO State
   const [seo, setSeo] = useState<SEOData>({ 
@@ -75,9 +80,16 @@ const PostEditor = () => {
           setAuthorName(post.authorName || 'Admin User');
           setAuthorTitle(post.authorTitle || 'Author');
           setStatus(post.status);
+          setOriginalStatus(post.status);
+          setOriginalPublishedAt(post.publishedAt);
           setCategoryId(post.category);
           setBlocks(post.blocks);
           setFeaturedImage(post.featuredImage);
+          
+          if (post.scheduledFor) {
+            // Convert to datetime-local format (YYYY-MM-DDTHH:mm)
+            setScheduledFor(new Date(post.scheduledFor).toISOString().slice(0, 16));
+          }
           
           setSeo({
             metaTitle: post.seo.metaTitle || '',
@@ -140,8 +152,29 @@ const PostEditor = () => {
   };
 
   const handleSave = async () => {
+    if (status === PostStatus.SCHEDULED && !scheduledFor) {
+       alert("Please set a date and time for the scheduled post.");
+       return;
+    }
+
     setSaving(true);
     try {
+      let finalPublishedAt = null;
+      
+      if (status === PostStatus.PUBLISHED) {
+         // If it was already published, keep the original date. 
+         // If switching from Draft/Scheduled to Published, use Now.
+         if (originalStatus === PostStatus.PUBLISHED && originalPublishedAt) {
+            finalPublishedAt = originalPublishedAt;
+         } else {
+            finalPublishedAt = new Date().toISOString();
+         }
+      } else if (status === PostStatus.SCHEDULED) {
+         // For scheduled posts, we set the publishedAt to the future date
+         // so sorting works correctly in lists
+         finalPublishedAt = new Date(scheduledFor).toISOString();
+      }
+
       const post: BlogPost = {
         id: isEditMode && id ? id : Date.now().toString(),
         title,
@@ -153,7 +186,8 @@ const PostEditor = () => {
         authorId: 'admin-1',
         authorName: authorName,
         authorTitle: authorTitle,
-        publishedAt: status === PostStatus.PUBLISHED ? new Date().toISOString() : null,
+        publishedAt: finalPublishedAt,
+        scheduledFor: status === PostStatus.SCHEDULED ? new Date(scheduledFor).toISOString() : null,
         blocks,
         readingTimeMinutes: 0,
         tags: [],
@@ -174,6 +208,7 @@ const PostEditor = () => {
   };
 
   // Block Editor Helpers
+  
   const handleKeyDown = (e: React.KeyboardEvent, idx: number, type: ContentBlock['type']) => {
     if (e.key === 'Enter') {
       if (type === 'heading') {
@@ -217,10 +252,7 @@ const PostEditor = () => {
 
     setProcessingImage(true);
     try {
-      // Compress and optimize image to WebP
       const optimizedDataUrl = await compressImage(file);
-      
-      // Prompt for Alt Text
       const altText = window.prompt("Enter alternative text for this image (for SEO and accessibility):", "");
 
       const newBlocks = [...blocks];
@@ -690,6 +722,19 @@ const PostEditor = () => {
                     <option value={PostStatus.SCHEDULED}>Scheduled</option>
                   </select>
                 </div>
+
+                {status === PostStatus.SCHEDULED && (
+                   <div className="animate-in fade-in slide-in-from-top-2">
+                     <label className="block text-xs font-medium text-slate-500 mb-1">Schedule Date</label>
+                     <input 
+                       type="datetime-local" 
+                       value={scheduledFor}
+                       onChange={e => setScheduledFor(e.target.value)}
+                       className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:border-brand-blue"
+                       required
+                     />
+                   </div>
+                )}
                 
                 <div className="grid grid-cols-1 gap-4">
                     <div>

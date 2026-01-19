@@ -67,7 +67,12 @@ export const getPosts = async (status?: PostStatus): Promise<BlogPost[]> => {
     .select('*')
     .order('published_at', { ascending: false });
 
-  if (status) {
+  if (status === PostStatus.PUBLISHED) {
+    // Return posts that are explicitly published OR scheduled posts that are past their scheduled date
+    const now = new Date().toISOString();
+    // Syntax: status.eq.published,and(status.eq.scheduled,scheduled_for.lte.NOW)
+    query = query.or(`status.eq.${PostStatus.PUBLISHED},and(status.eq.${PostStatus.SCHEDULED},scheduled_for.lte.${now})`);
+  } else if (status) {
     query = query.eq('status', status);
   }
 
@@ -83,14 +88,22 @@ export const getPosts = async (status?: PostStatus): Promise<BlogPost[]> => {
 };
 
 export const getPostBySlug = async (slug: string): Promise<BlogPost | undefined> => {
+  const now = new Date().toISOString();
+  
+  // For public access, strictly fetch only visible posts
+  // This query might return nothing if the post exists but is a draft
   const { data, error } = await supabase
     .from('posts')
     .select('*')
     .eq('slug', slug)
+    .or(`status.eq.${PostStatus.PUBLISHED},and(status.eq.${PostStatus.SCHEDULED},scheduled_for.lte.${now})`)
     .single();
 
   if (error) {
-    console.error('Error fetching post by slug:', error);
+    // If it's just not found or filtered out, valid case.
+    if (error.code !== 'PGRST116') { // PGRST116 is "The result contains 0 rows"
+       console.error('Error fetching post by slug:', error);
+    }
     return undefined;
   }
 
@@ -114,10 +127,13 @@ export const getPostById = async (id: string): Promise<BlogPost | undefined> => 
 };
 
 export const getRelatedPosts = async (currentPostId: string, category: string): Promise<BlogPost[]> => {
+  const now = new Date().toISOString();
+  
   const { data, error } = await supabase
     .from('posts')
     .select('*')
-    .eq('status', PostStatus.PUBLISHED)
+    // Ensure related posts are also publicly visible
+    .or(`status.eq.${PostStatus.PUBLISHED},and(status.eq.${PostStatus.SCHEDULED},scheduled_for.lte.${now})`)
     .eq('category', category)
     .neq('id', currentPostId)
     .limit(3);
