@@ -1,0 +1,748 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { BlogPost, ContentBlock, PostStatus, Category, AISuggestion, SEOData } from '../../types';
+import { getPostById, savePost, getCategories } from '../../services/blogService';
+import { generateSEOSuggestions } from '../../services/geminiService';
+import AdminLayout from '../../components/layout/AdminLayout';
+import SEOHead from '../../components/ui/SEOHead';
+import ArticleTemplate from '../../components/blog/ArticleTemplate';
+
+const PostEditor = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const isEditMode = id && id !== 'new';
+
+  const [loading, setLoading] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [showAdvancedSEO, setShowAdvancedSEO] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  
+  // Form State
+  const [title, setTitle] = useState('');
+  const [slug, setSlug] = useState('');
+  const [excerpt, setExcerpt] = useState('');
+  const [status, setStatus] = useState<PostStatus>(PostStatus.DRAFT);
+  const [categoryId, setCategoryId] = useState('');
+  const [blocks, setBlocks] = useState<ContentBlock[]>([]);
+  const [featuredImage, setFeaturedImage] = useState('');
+  
+  // Detailed SEO State
+  const [seo, setSeo] = useState<SEOData>({ 
+    metaTitle: '', 
+    metaDescription: '', 
+    keywords: [],
+    canonicalUrl: '',
+    ogTitle: '',
+    ogDescription: '',
+    ogImage: ''
+  });
+  // Helper for keyword input which is a string in UI but array in data
+  const [keywordsInput, setKeywordsInput] = useState('');
+
+  useEffect(() => {
+    const init = async () => {
+      const cats = await getCategories();
+      setCategories(cats);
+      if (cats.length > 0) setCategoryId(cats[0].id);
+
+      if (isEditMode) {
+        setLoading(true);
+        const post = await getPostById(id);
+        if (post) {
+          setTitle(post.title);
+          setSlug(post.slug);
+          setExcerpt(post.excerpt);
+          setStatus(post.status);
+          setCategoryId(post.category);
+          setBlocks(post.blocks);
+          setFeaturedImage(post.featuredImage);
+          
+          setSeo({
+            metaTitle: post.seo.metaTitle || '',
+            metaDescription: post.seo.metaDescription || '',
+            keywords: post.seo.keywords || [],
+            canonicalUrl: post.seo.canonicalUrl || '',
+            ogTitle: post.seo.ogTitle || '',
+            ogDescription: post.seo.ogDescription || '',
+            ogImage: post.seo.ogImage || ''
+          });
+          setKeywordsInput(post.seo.keywords.join(', '));
+        }
+        setLoading(false);
+      } else {
+        setBlocks([{ id: Date.now().toString(), type: 'paragraph', content: '' }]);
+      }
+    };
+    init();
+  }, [id, isEditMode]);
+
+  const handleAI = async () => {
+    const contentText = blocks.map(b => b.content).join(' ');
+    if (!contentText) return alert('Please write some content first.');
+    
+    setAiLoading(true);
+    try {
+      const suggestion: AISuggestion = await generateSEOSuggestions(contentText);
+      
+      if (window.confirm('Apply AI suggestions to Title, Excerpt, and SEO fields?')) {
+        setTitle(suggestion.title);
+        setExcerpt(suggestion.excerpt);
+        
+        const newKeywords = suggestion.seo.keywords;
+        
+        setSeo(prev => ({
+          ...prev,
+          metaTitle: suggestion.seo.metaTitle,
+          metaDescription: suggestion.seo.metaDescription,
+          keywords: newKeywords,
+          // Auto-fill Open Graph with same data by default for convenience
+          ogTitle: suggestion.seo.ogTitle || suggestion.seo.metaTitle,
+          ogDescription: suggestion.seo.ogDescription || suggestion.seo.metaDescription,
+        }));
+        setKeywordsInput(newKeywords.join(', '));
+        
+        setSlug(suggestion.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''));
+      }
+    } catch (e) {
+      alert('Failed to generate AI suggestions. Check API Key.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    const post: BlogPost = {
+      id: isEditMode && id ? id : Date.now().toString(),
+      title,
+      slug: slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      excerpt,
+      status,
+      category: categoryId,
+      featuredImage: featuredImage || 'https://picsum.photos/800/600',
+      authorId: 'admin-1', // Mock
+      authorName: 'Admin User',
+      publishedAt: status === PostStatus.PUBLISHED ? new Date().toISOString() : null,
+      blocks,
+      readingTimeMinutes: 0, // Calculated in service
+      tags: [],
+      seo: {
+        ...seo,
+        keywords: keywordsInput.split(',').map(k => k.trim()).filter(k => k),
+      }
+    };
+
+    await savePost(post);
+    navigate('/admin/posts');
+  };
+
+  // Block Editor Helpers
+  const updateBlock = (idx: number, content: string) => {
+    const newBlocks = [...blocks];
+    newBlocks[idx].content = content;
+    setBlocks(newBlocks);
+  };
+
+  const addBlock = (type: ContentBlock['type']) => {
+    let content = '';
+    if (type === 'list') content = '[]';
+    setBlocks([...blocks, { id: Date.now().toString(), type, content, metadata: { level: 2 } }]);
+  };
+
+  const removeBlock = (idx: number) => {
+    const newBlocks = [...blocks];
+    newBlocks.splice(idx, 1);
+    setBlocks(newBlocks);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Use FileReader to convert image to Base64 for local storage display
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        updateBlock(idx, reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+  
+  const handleHeadingImageUpload = (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        const newBlocks = [...blocks];
+        newBlocks[idx].metadata = { ...newBlocks[idx].metadata, image: reader.result };
+        setBlocks(newBlocks);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeHeadingImage = (idx: number) => {
+    const newBlocks = [...blocks];
+    if (newBlocks[idx].metadata) {
+       // Keep other metadata, remove image
+       const { image, ...rest } = newBlocks[idx].metadata!;
+       newBlocks[idx].metadata = rest;
+       setBlocks(newBlocks);
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>, idx: number) => {
+    const clipboardText = e.clipboardData.getData('text');
+    e.preventDefault();
+
+    const target = e.target as HTMLTextAreaElement;
+    const selectionStart = target.selectionStart;
+    const currentContent = blocks[idx].content;
+
+    // Split current content around cursor
+    const textBefore = currentContent.slice(0, selectionStart);
+    const textAfter = currentContent.slice(target.selectionEnd);
+
+    // Advanced Paste Parsing
+    const lines = clipboardText.split(/\r?\n/);
+    const parsedBlocks: ContentBlock[] = [];
+    
+    let bufferType: 'paragraph' | 'list' | null = null;
+    let bufferContent: string[] = []; 
+
+    const flush = () => {
+       if (!bufferType) return;
+       
+       if (bufferType === 'list') {
+          if (bufferContent.length > 0) {
+            parsedBlocks.push({
+               id: Date.now().toString() + Math.random(),
+               type: 'list',
+               content: JSON.stringify(bufferContent)
+            });
+          }
+       } else {
+          // Paragraph
+          const text = bufferContent.join(' ').trim();
+          if (text) {
+              parsedBlocks.push({
+                 id: Date.now().toString() + Math.random(),
+                 type: 'paragraph',
+                 content: text
+              });
+          }
+       }
+       bufferType = null;
+       bufferContent = [];
+    };
+
+    lines.forEach(line => {
+       const trimmed = line.trim();
+       if (!trimmed) {
+          flush(); // Empty line breaks blocks
+          return;
+       }
+
+       // 1. Explicit Header Detection (#)
+       if (/^#{1,6}\s/.test(trimmed)) {
+          flush();
+          const level = (trimmed.match(/^#{1,6}/)?.[0].length || 2) as 1|2|3|4|5|6;
+          parsedBlocks.push({
+             id: Date.now().toString() + Math.random(),
+             type: 'heading',
+             content: trimmed.replace(/^#{1,6}\s+/, ''),
+             metadata: { level }
+          });
+          return;
+       }
+       
+       // 2. List Item Detection (* or -)
+       if (/^[\*\-]\s/.test(trimmed)) {
+          if (bufferType !== 'list') flush();
+          bufferType = 'list';
+          // Store raw markdown content, do not convert to HTML tags
+          bufferContent.push(trimmed.replace(/^[\*\-]\s+/, ''));
+          return;
+       }
+
+       // 3. Implicit Header Detection
+       // If we are starting a new block (buffer is empty/null), and line looks like a header
+       if (bufferType === null) {
+          const isShort = trimmed.length < 150;
+          const hasNoPeriod = !trimmed.endsWith('.'); // Headers rarely end in .
+          
+          if (isShort && hasNoPeriod) {
+              parsedBlocks.push({
+                 id: Date.now().toString() + Math.random(),
+                 type: 'heading',
+                 content: trimmed,
+                 metadata: { level: 2 }
+              });
+              return;
+          }
+          
+          // Default to Paragraph
+          bufferType = 'paragraph';
+          bufferContent.push(trimmed);
+       } else if (bufferType === 'list') {
+          // If we hit text while in list mode, assume it breaks the list
+          flush();
+          
+          // Re-evaluate line for implicit header or paragraph
+          const isShort = trimmed.length < 150;
+          const hasNoPeriod = !trimmed.endsWith('.');
+          
+          if (isShort && hasNoPeriod) {
+             parsedBlocks.push({
+                 id: Date.now().toString() + Math.random(),
+                 type: 'heading',
+                 content: trimmed,
+                 metadata: { level: 2 }
+              });
+          } else {
+              bufferType = 'paragraph';
+              bufferContent.push(trimmed);
+          }
+       } else {
+          // Continue Paragraph
+          bufferContent.push(trimmed);
+       }
+    });
+    flush();
+
+    if (parsedBlocks.length === 0) return;
+
+    // Apply changes to block list
+    const updatedBlocks = [...blocks];
+    
+    // 1. Update current block to keep only textBefore
+    updatedBlocks[idx] = { ...updatedBlocks[idx], content: textBefore };
+
+    // 2. Insert new blocks
+    updatedBlocks.splice(idx + 1, 0, ...parsedBlocks);
+
+    // 3. If there was text after cursor, append it as a new paragraph
+    if (textAfter.trim()) {
+      updatedBlocks.splice(idx + 1 + parsedBlocks.length, 0, {
+        id: Date.now().toString() + Math.random(),
+        type: 'paragraph',
+        content: textAfter
+      });
+    }
+
+    // Cleanup: If the original block became empty (cursor at start), remove it
+    if (!textBefore.trim()) {
+       updatedBlocks.splice(idx, 1);
+    }
+
+    setBlocks(updatedBlocks);
+  };
+
+  if (loading) return <AdminLayout><div className="p-8">Loading editor...</div></AdminLayout>;
+
+  // RENDER PREVIEW MODE
+  if (showPreview) {
+    const textContent = blocks.map(b => b.content).join(' ');
+    const wordCount = textContent.split(/\s+/).length;
+    const readingTime = Math.max(1, Math.ceil(wordCount / 200));
+
+    const previewPost: BlogPost = {
+      id: 'preview',
+      title: title || 'Untitled Post',
+      slug: slug || 'preview-slug',
+      excerpt: excerpt,
+      status: PostStatus.DRAFT,
+      category: categoryId,
+      featuredImage: featuredImage,
+      authorId: 'admin-1',
+      authorName: 'Admin User',
+      publishedAt: status === PostStatus.PUBLISHED ? new Date().toISOString() : null,
+      blocks: blocks,
+      readingTimeMinutes: readingTime,
+      tags: keywordsInput.split(',').filter(k => k.trim()),
+      seo: seo
+    };
+
+    return (
+      <div className="bg-white min-h-screen relative z-50">
+         <ArticleTemplate post={previewPost} previewMode={true} />
+         <div className="fixed bottom-8 right-8 z-[100] flex gap-4 animate-bounce-in">
+            <button 
+              onClick={() => setShowPreview(false)}
+              className="bg-slate-900 text-white px-8 py-3 rounded-full font-bold shadow-2xl hover:bg-slate-800 transition-all flex items-center gap-2 border border-slate-700"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"></path></svg>
+              Back to Editor
+            </button>
+         </div>
+      </div>
+    );
+  }
+
+  return (
+    <AdminLayout>
+      <SEOHead title={isEditMode ? 'Edit Post' : 'New Post'} noIndex={true} />
+      
+      <div className="max-w-5xl mx-auto pb-20">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-serif font-bold text-slate-900">
+            {isEditMode ? 'Edit Post' : 'New Post'}
+          </h1>
+          <div className="flex gap-3">
+             <button 
+              onClick={handleAI}
+              disabled={aiLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 shadow-sm"
+            >
+              {aiLoading ? 'Thinking...' : '✨ AI Assist'}
+            </button>
+            <button 
+              onClick={() => setShowPreview(true)}
+              className="px-6 py-2 bg-white text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 transition shadow-sm font-medium"
+            >
+              Preview
+            </button>
+            <button 
+              onClick={handleSave}
+              className="px-6 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition shadow-sm"
+            >
+              Save Post
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content Area */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+              <input
+                type="text"
+                placeholder="Post Title"
+                className="w-full text-4xl font-bold font-serif placeholder-slate-300 border-none outline-none mb-4"
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+              />
+              <textarea
+                placeholder="Short excerpt..."
+                className="w-full text-lg text-slate-600 placeholder-slate-300 border-none outline-none resize-none"
+                rows={2}
+                value={excerpt}
+                onChange={e => setExcerpt(e.target.value)}
+              />
+            </div>
+
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 min-h-[500px]">
+              <div className="space-y-4">
+                {blocks.map((block, idx) => (
+                  <div key={block.id} className="group relative">
+                    <div className="absolute -left-10 top-2 opacity-0 group-hover:opacity-100 flex gap-1">
+                      <button onClick={() => removeBlock(idx)} className="p-1 text-red-400 hover:text-red-600">✕</button>
+                    </div>
+                    
+                    {block.type === 'heading' && (
+                      <div className="relative">
+                        <div className="flex items-center gap-2 mb-3">
+                           <input
+                            type="text"
+                            value={block.content}
+                            onChange={e => updateBlock(idx, e.target.value)}
+                            placeholder="Heading..."
+                            className="w-full text-2xl font-bold text-slate-800 border-none outline-none"
+                           />
+                           {!block.metadata?.image && (
+                             <label className="cursor-pointer text-slate-300 hover:text-brand-blue transition-colors p-1" title="Add Cover Image">
+                               <input 
+                                 type="file" 
+                                 accept="image/*" 
+                                 className="hidden" 
+                                 onChange={(e) => handleHeadingImageUpload(e, idx)} 
+                               />
+                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                             </label>
+                           )}
+                        </div>
+                        {block.metadata?.image && (
+                          <div className="relative mb-3 group/cover">
+                             <img src={block.metadata.image} alt="Heading Cover" className="w-full h-40 object-cover rounded-lg shadow-sm" />
+                             <button 
+                               onClick={() => removeHeadingImage(idx)}
+                               className="absolute top-2 right-2 bg-white/90 text-red-500 p-1.5 rounded-full shadow-sm opacity-0 group-hover/cover:opacity-100 transition-opacity hover:bg-white"
+                             >
+                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                             </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {block.type === 'paragraph' && (
+                      <textarea
+                        value={block.content}
+                        onChange={e => updateBlock(idx, e.target.value)}
+                        onPaste={e => handlePaste(e, idx)}
+                        placeholder="Type something amazing..."
+                        className="w-full text-base leading-relaxed text-slate-700 border-none outline-none resize-none bg-transparent"
+                        rows={Math.max(2, Math.ceil(block.content.length / 80))}
+                      />
+                    )}
+                    {block.type === 'list' && (
+                      <div className="space-y-2 bg-slate-50 p-4 rounded-lg">
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Bullet List</label>
+                        {(() => {
+                           let items: string[] = [];
+                           try { items = block.content ? JSON.parse(block.content) : []; } catch(e) { items = []; }
+                           return (
+                             <div className="space-y-2">
+                               {items.map((item, i) => (
+                                 <div key={i} className="flex gap-2 items-start">
+                                   <span className="mt-2.5 w-1.5 h-1.5 rounded-full bg-slate-400 flex-shrink-0"></span>
+                                   <input
+                                     value={item}
+                                     onChange={(e) => {
+                                        const newItems = [...items];
+                                        newItems[i] = e.target.value;
+                                        updateBlock(idx, JSON.stringify(newItems));
+                                     }}
+                                     className="flex-1 p-2 bg-white border border-slate-200 rounded text-sm text-slate-700 focus:border-brand-blue outline-none font-mono"
+                                     placeholder="List item..."
+                                   />
+                                   <button onClick={() => {
+                                      const newItems = items.filter((_, index) => index !== i);
+                                      updateBlock(idx, JSON.stringify(newItems));
+                                   }} className="mt-2 text-slate-300 hover:text-red-400">
+                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                   </button>
+                                 </div>
+                               ))}
+                               <button 
+                                 onClick={() => {
+                                   items.push('');
+                                   updateBlock(idx, JSON.stringify(items));
+                                 }} 
+                                 className="text-xs text-brand-blue font-bold hover:underline flex items-center gap-1 mt-2"
+                               >
+                                 + Add Item
+                               </button>
+                             </div>
+                           );
+                        })()}
+                      </div>
+                    )}
+                    {block.type === 'image' && (
+                      <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 bg-slate-50 text-center relative hover:border-brand-blue transition-colors">
+                        {block.content ? (
+                          <div className="relative group/image">
+                             <img src={block.content} alt="Preview" className="max-h-96 mx-auto rounded shadow-sm" />
+                             <button 
+                              onClick={() => updateBlock(idx, '')} 
+                              className="absolute top-2 right-2 bg-white text-red-500 p-2 rounded-full shadow-md opacity-0 group-hover/image:opacity-100 transition-opacity"
+                              title="Remove Image"
+                             >
+                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                             </button>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                             <div className="flex flex-col items-center justify-center py-4">
+                                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-3">
+                                  <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                </div>
+                                <p className="text-sm text-slate-500 font-medium mb-1">Click to Upload Image</p>
+                                <p className="text-xs text-slate-400 mb-4">SVG, PNG, JPG or GIF (max. 3MB)</p>
+                                <input 
+                                  type="file" 
+                                  accept="image/*"
+                                  onChange={(e) => handleImageUpload(e, idx)} 
+                                  className="block w-full max-w-xs text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-brand-blue file:text-white hover:file:bg-sky-600 cursor-pointer mx-auto"
+                                />
+                             </div>
+                             
+                             <div className="relative">
+                                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200"></div></div>
+                                <div className="relative flex justify-center text-xs uppercase"><span className="bg-slate-50 px-2 text-slate-400 font-bold tracking-wider">Or paste URL</span></div>
+                             </div>
+                             
+                             <input 
+                              type="text" 
+                              placeholder="https://example.com/image.jpg"
+                              className="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm outline-none focus:border-brand-blue"
+                              value={block.content}
+                              onChange={e => updateBlock(idx, e.target.value)}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {block.type === 'code' && (
+                      <textarea
+                        value={block.content}
+                        onChange={e => updateBlock(idx, e.target.value)}
+                        placeholder="Paste code here..."
+                        className="w-full font-mono text-sm bg-slate-900 text-slate-200 p-4 rounded-lg outline-none"
+                        rows={5}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Block Controls */}
+              <div className="mt-8 flex gap-2 border-t border-slate-100 pt-4 flex-wrap">
+                <button onClick={() => addBlock('paragraph')} className="px-3 py-1.5 text-xs font-medium bg-slate-100 hover:bg-slate-200 rounded text-slate-700 transition">+ Text</button>
+                <button onClick={() => addBlock('heading')} className="px-3 py-1.5 text-xs font-medium bg-slate-100 hover:bg-slate-200 rounded text-slate-700 transition">+ Heading</button>
+                <button onClick={() => addBlock('list')} className="px-3 py-1.5 text-xs font-medium bg-slate-100 hover:bg-slate-200 rounded text-slate-700 transition">+ List</button>
+                <button onClick={() => addBlock('image')} className="px-3 py-1.5 text-xs font-medium bg-slate-100 hover:bg-slate-200 rounded text-slate-700 transition">+ Image</button>
+                <button onClick={() => addBlock('code')} className="px-3 py-1.5 text-xs font-medium bg-slate-100 hover:bg-slate-200 rounded text-slate-700 transition">+ Code</button>
+              </div>
+            </div>
+          </div>
+
+          {/* Sidebar Settings */}
+          <div className="space-y-6">
+            <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+              <h3 className="font-bold text-sm text-slate-900 mb-4 uppercase tracking-wider">Publishing</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Status</label>
+                  <select 
+                    value={status} 
+                    onChange={e => setStatus(e.target.value as PostStatus)}
+                    className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-slate-50"
+                  >
+                    <option value={PostStatus.DRAFT}>Draft</option>
+                    <option value={PostStatus.PUBLISHED}>Published</option>
+                    <option value={PostStatus.SCHEDULED}>Scheduled</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Category</label>
+                  <select 
+                    value={categoryId} 
+                    onChange={e => setCategoryId(e.target.value)}
+                    className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-slate-50"
+                  >
+                    {categories.map(c => (
+                      <option key={c.id} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">URL Slug</label>
+                  <input 
+                    type="text" 
+                    value={slug}
+                    onChange={e => setSlug(e.target.value)}
+                    className="w-full p-2 border border-slate-200 rounded-lg text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-bold text-sm text-slate-900 uppercase tracking-wider">SEO Metadata</h3>
+                <button onClick={() => setShowAdvancedSEO(!showAdvancedSEO)} className="text-xs text-brand-blue hover:underline">
+                  {showAdvancedSEO ? 'Hide Advanced' : 'Show Advanced'}
+                </button>
+              </div>
+              
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Meta Title</label>
+                  <input 
+                    type="text" 
+                    value={seo.metaTitle}
+                    onChange={e => setSeo({...seo, metaTitle: e.target.value})}
+                    className="w-full p-2 border border-slate-200 rounded-lg text-sm"
+                    maxLength={60}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Meta Description</label>
+                  <textarea 
+                    value={seo.metaDescription}
+                    onChange={e => setSeo({...seo, metaDescription: e.target.value})}
+                    rows={3}
+                    className="w-full p-2 border border-slate-200 rounded-lg text-sm"
+                    maxLength={160}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Keywords (comma sep)</label>
+                  <input 
+                    type="text" 
+                    value={keywordsInput}
+                    onChange={e => setKeywordsInput(e.target.value)}
+                    className="w-full p-2 border border-slate-200 rounded-lg text-sm"
+                  />
+                </div>
+                
+                {showAdvancedSEO && (
+                  <div className="pt-4 mt-4 border-t border-slate-100 space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">Canonical URL</label>
+                      <input 
+                        type="text" 
+                        value={seo.canonicalUrl}
+                        onChange={e => setSeo({...seo, canonicalUrl: e.target.value})}
+                        className="w-full p-2 border border-slate-200 rounded-lg text-sm"
+                        placeholder="https://..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">Open Graph Title</label>
+                      <input 
+                        type="text" 
+                        value={seo.ogTitle}
+                        onChange={e => setSeo({...seo, ogTitle: e.target.value})}
+                        className="w-full p-2 border border-slate-200 rounded-lg text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">Open Graph Description</label>
+                      <textarea 
+                        value={seo.ogDescription}
+                        onChange={e => setSeo({...seo, ogDescription: e.target.value})}
+                        rows={2}
+                        className="w-full p-2 border border-slate-200 rounded-lg text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">Open Graph Image URL</label>
+                      <input 
+                        type="text" 
+                        value={seo.ogImage}
+                        onChange={e => setSeo({...seo, ogImage: e.target.value})}
+                        className="w-full p-2 border border-slate-200 rounded-lg text-sm"
+                        placeholder="https://..."
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+             <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+              <h3 className="font-bold text-sm text-slate-900 mb-4 uppercase tracking-wider">Featured Image</h3>
+              <input 
+                type="text" 
+                value={featuredImage}
+                onChange={e => setFeaturedImage(e.target.value)}
+                placeholder="Image URL"
+                className="w-full p-2 border border-slate-200 rounded-lg text-sm mb-2"
+              />
+              {featuredImage && (
+                <img src={featuredImage} alt="Featured" className="w-full h-32 object-cover rounded-lg" />
+              )}
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </AdminLayout>
+  );
+};
+
+export default PostEditor;
