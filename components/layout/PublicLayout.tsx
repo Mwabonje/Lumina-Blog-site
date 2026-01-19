@@ -4,8 +4,12 @@ import ContactModal from '../ui/ContactModal';
 
 const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
-  const isActive = (path: string) => location.pathname === path;
   const [isContactOpen, setIsContactOpen] = useState(false);
+
+  const isActive = (path: string) => {
+    if (path === '/') return location.pathname === '/';
+    return location.pathname.startsWith(path);
+  };
 
   return (
     <div className="min-h-screen flex flex-col font-sans bg-background text-primary">
@@ -26,20 +30,17 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
             <nav className="hidden md:flex gap-6 items-center">
               {[
                 { path: '/', label: 'Home' },
-                { path: '#', label: 'About' },
-                { path: '/', label: 'Blog' },
+                { path: '/about', label: 'About' },
+                { path: '/blog', label: 'Blog' },
               ].map(link => (
                 <Link 
                   key={link.label}
                   to={link.path} 
                   className={`text-sm font-medium transition-colors flex items-center gap-1 ${
-                    link.label === 'Blog' ? 'text-accent' : 'text-gray-300 hover:text-white'
+                    isActive(link.path) ? 'text-accent' : 'text-gray-300 hover:text-white'
                   }`}
                 >
                   {link.label}
-                  {['Blog'].includes(link.label) && (
-                     <svg className="w-3 h-3 mt-0.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                  )}
                 </Link>
               ))}
             </nav>
@@ -67,9 +68,14 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       <footer className="bg-[#020617] text-gray-400 py-12 border-t border-gray-800">
         <div className="max-w-7xl mx-auto px-6 text-center text-sm flex flex-col items-center gap-4">
           <p>© {new Date().getFullYear()} Lumina Inc. All Rights Reserved.</p>
+          <div className="flex gap-6">
+             <Link to="/" className="hover:text-white transition-colors">Home</Link>
+             <Link to="/about" className="hover:text-white transition-colors">About</Link>
+             <Link to="/blog" className="hover:text-white transition-colors">Blog</Link>
+          </div>
           <Link 
             to="/admin" 
-            className="text-gray-700 hover:text-gray-500 transition-colors text-xs font-medium"
+            className="text-gray-700 hover:text-gray-500 transition-colors text-xs font-medium mt-4"
           >
             Admin Login
           </Link>

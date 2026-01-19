@@ -1,6 +1,7 @@
 import React from 'react';
 import { HashRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import Home from './pages/public/Home';
+import About from './pages/public/About';
 import PostView from './pages/public/PostView';
 import Dashboard from './pages/admin/Dashboard';
 import Login from './pages/admin/Login';
@@ -17,6 +18,7 @@ const App: React.FC = () => {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
+        <Route path="/about" element={<About />} />
         <Route path="/blog" element={<Home />} /> {/* Reusing Home as Blog List for simplicity */}
         <Route path="/blog/:slug" element={<PostView />} />
 
