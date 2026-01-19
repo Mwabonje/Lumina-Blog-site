@@ -84,11 +84,31 @@ export const getPosts = async (status?: PostStatus): Promise<BlogPost[]> => {
     throw new Error(error.message);
   }
 
+  // Auto-publish logic: Check for scheduled posts that are due
+  const now = new Date();
+  const postsToUpdate = (data || []).filter((row: any) => 
+    row.status === PostStatus.SCHEDULED && 
+    row.scheduled_for && 
+    new Date(row.scheduled_for) <= now
+  );
+
+  if (postsToUpdate.length > 0) {
+    // 1. Update local objects so UI reflects change immediately
+    postsToUpdate.forEach((row: any) => {
+      row.status = PostStatus.PUBLISHED;
+    });
+
+    // 2. Persist to Database (fire and forget to not block UI)
+    Promise.all(postsToUpdate.map((row: any) => 
+      supabase.from('posts').update({ status: PostStatus.PUBLISHED }).eq('id', row.id)
+    )).catch(err => console.error("Error auto-publishing posts:", err));
+  }
+
   return (data || []).map(mapRowToPost);
 };
 
 export const getPostBySlug = async (slug: string): Promise<BlogPost | undefined> => {
-  const now = new Date().toISOString();
+  const nowStr = new Date().toISOString();
   
   // For public access, strictly fetch only visible posts
   // This query might return nothing if the post exists but is a draft
@@ -96,7 +116,7 @@ export const getPostBySlug = async (slug: string): Promise<BlogPost | undefined>
     .from('posts')
     .select('*')
     .eq('slug', slug)
-    .or(`status.eq.${PostStatus.PUBLISHED},and(status.eq.${PostStatus.SCHEDULED},scheduled_for.lte.${now})`)
+    .or(`status.eq.${PostStatus.PUBLISHED},and(status.eq.${PostStatus.SCHEDULED},scheduled_for.lte.${nowStr})`)
     .single();
 
   if (error) {
@@ -105,6 +125,13 @@ export const getPostBySlug = async (slug: string): Promise<BlogPost | undefined>
        console.error('Error fetching post by slug:', error);
     }
     return undefined;
+  }
+
+  // Auto-publish if needed
+  if (data.status === PostStatus.SCHEDULED && data.scheduled_for && new Date(data.scheduled_for) <= new Date()) {
+    data.status = PostStatus.PUBLISHED;
+    supabase.from('posts').update({ status: PostStatus.PUBLISHED }).eq('id', data.id)
+      .then(({ error }) => { if (error) console.error("Error auto-publishing post:", error); });
   }
 
   return mapRowToPost(data);
@@ -121,6 +148,12 @@ export const getPostById = async (id: string): Promise<BlogPost | undefined> => 
     console.error('Error fetching post by id:', error);
     // Don't throw here to allow "New Post" flow to work gracefully if ID not found
     return undefined;
+  }
+
+  // Auto-publish if needed (even in admin editor)
+  if (data.status === PostStatus.SCHEDULED && data.scheduled_for && new Date(data.scheduled_for) <= new Date()) {
+    data.status = PostStatus.PUBLISHED;
+    supabase.from('posts').update({ status: PostStatus.PUBLISHED }).eq('id', data.id);
   }
 
   return mapRowToPost(data);
@@ -141,6 +174,20 @@ export const getRelatedPosts = async (currentPostId: string, category: string): 
   if (error) {
     console.error('Error fetching related posts:', error);
     return [];
+  }
+
+  // Auto-publish logic for related posts list
+  const postsToUpdate = (data || []).filter((row: any) => 
+    row.status === PostStatus.SCHEDULED && 
+    row.scheduled_for && 
+    new Date(row.scheduled_for) <= new Date()
+  );
+
+  if (postsToUpdate.length > 0) {
+    postsToUpdate.forEach((row: any) => { row.status = PostStatus.PUBLISHED; });
+    Promise.all(postsToUpdate.map((row: any) => 
+      supabase.from('posts').update({ status: PostStatus.PUBLISHED }).eq('id', row.id)
+    )).catch(err => console.error("Error auto-publishing related posts:", err));
   }
 
   return (data || []).map(mapRowToPost);
