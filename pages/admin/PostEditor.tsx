@@ -219,7 +219,17 @@ const PostEditor = () => {
     try {
       // Compress and optimize image to WebP
       const optimizedDataUrl = await compressImage(file);
-      updateBlock(idx, optimizedDataUrl);
+      
+      // Prompt for Alt Text
+      const altText = window.prompt("Enter alternative text for this image (for SEO and accessibility):", "");
+
+      const newBlocks = [...blocks];
+      newBlocks[idx].content = optimizedDataUrl;
+      newBlocks[idx].metadata = { 
+        ...newBlocks[idx].metadata, 
+        alt: altText || '' 
+      };
+      setBlocks(newBlocks);
     } catch (err) {
       console.error("Image processing failed", err);
       alert("Failed to process image.");
@@ -581,7 +591,7 @@ const PostEditor = () => {
                       <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 bg-slate-50 text-center relative hover:border-brand-blue transition-colors">
                         {block.content ? (
                           <div className="relative group/image">
-                             <img src={block.content} alt="Preview" className="max-h-96 mx-auto rounded shadow-sm" />
+                             <img src={block.content} alt={block.metadata?.alt || "Preview"} className="max-h-96 mx-auto rounded shadow-sm" />
                              <button 
                               onClick={() => updateBlock(idx, '')} 
                               className="absolute top-2 right-2 bg-white text-red-500 p-2 rounded-full shadow-md opacity-0 group-hover/image:opacity-100 transition-opacity"
@@ -589,6 +599,22 @@ const PostEditor = () => {
                              >
                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                              </button>
+                             
+                             {/* Alt Text Editor */}
+                             <div className="mt-4 text-left max-w-lg mx-auto bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Alt Text (Description)</label>
+                               <input 
+                                 type="text" 
+                                 value={block.metadata?.alt || ''} 
+                                 onChange={(e) => {
+                                    const newBlocks = [...blocks];
+                                    newBlocks[idx].metadata = { ...newBlocks[idx].metadata, alt: e.target.value };
+                                    setBlocks(newBlocks);
+                                 }}
+                                 className="block w-full text-sm p-2 border border-slate-200 rounded text-slate-700 outline-none focus:border-brand-blue transition-colors"
+                                 placeholder="Describe this image for SEO and accessibility..."
+                               />
+                             </div>
                           </div>
                         ) : (
                           <div className="space-y-4">

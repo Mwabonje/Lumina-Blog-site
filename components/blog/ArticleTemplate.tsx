@@ -48,7 +48,7 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = 
           <figure className="my-10">
             <img 
               src={block.content} 
-              alt={block.metadata?.alt || 'Blog image'} 
+              alt={block.metadata?.alt || block.metadata?.caption || 'Blog image'} 
               className="w-full rounded-2xl shadow-md"
               loading="lazy"
               decoding="async"
