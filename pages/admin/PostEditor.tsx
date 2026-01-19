@@ -315,37 +315,12 @@ const PostEditor = () => {
        }
 
        if (bufferType === null) {
-          const isShort = trimmed.length < 100;
-          // Improved detection: don't convert lines ending in :, ;, or , to headings
-          const hasTerminalPunctuation = ['.', ':', ';', ','].some(c => trimmed.endsWith(c));
-          
-          if (isShort && !hasTerminalPunctuation) {
-              parsedBlocks.push({
-                 id: Date.now().toString() + Math.random(),
-                 type: 'heading',
-                 content: trimmed,
-                 metadata: { level: 2 }
-              });
-              return;
-          }
           bufferType = 'paragraph';
           bufferContent.push(trimmed);
        } else if (bufferType === 'list') {
           flush();
-          const isShort = trimmed.length < 100;
-          const hasTerminalPunctuation = ['.', ':', ';', ','].some(c => trimmed.endsWith(c));
-          
-          if (isShort && !hasTerminalPunctuation) {
-             parsedBlocks.push({
-                 id: Date.now().toString() + Math.random(),
-                 type: 'heading',
-                 content: trimmed,
-                 metadata: { level: 2 }
-              });
-          } else {
-              bufferType = 'paragraph';
-              bufferContent.push(trimmed);
-          }
+          bufferType = 'paragraph';
+          bufferContent.push(trimmed);
        } else {
           bufferContent.push(trimmed);
        }
