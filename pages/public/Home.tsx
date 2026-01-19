@@ -46,6 +46,7 @@ const Home = () => {
                     src={featured.featuredImage} 
                     alt={featured.title} 
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
+                    loading="lazy"
                    />
                 </div>
              </div>

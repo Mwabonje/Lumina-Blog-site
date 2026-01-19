@@ -28,7 +28,7 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = 
       case 'heading':
         const Tag = `h${block.metadata?.level || 2}` as React.ElementType;
         return (
-          <div className="mt-12 mb-6">
+          <div className="mt-16 mb-8">
             <Tag className="font-bold text-primary leading-tight text-2xl md:text-3xl mb-6">
               {block.content}
             </Tag>
@@ -36,14 +36,15 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = 
               <img 
                 src={block.metadata.image} 
                 alt={block.content}
-                className="w-full h-auto max-h-[500px] object-cover rounded-xl shadow-sm"
+                className="w-full h-auto max-h-[500px] object-cover rounded-xl shadow-sm mt-6"
+                loading="lazy"
               />
             )}
           </div>
         );
       case 'image':
         return (
-          <figure className="my-8">
+          <figure className="my-10">
             <img 
               src={block.content} 
               alt={block.metadata?.alt || 'Blog image'} 
@@ -51,13 +52,13 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = 
               loading="lazy"
             />
             {block.metadata?.caption && (
-              <figcaption className="text-center text-xs text-secondary mt-2 italic">{block.metadata.caption}</figcaption>
+              <figcaption className="text-center text-sm text-secondary mt-3 italic">{block.metadata.caption}</figcaption>
             )}
           </figure>
         );
       case 'code':
         return (
-          <div className="my-8 rounded-lg overflow-hidden bg-[#0f172a] shadow-md border border-slate-800">
+          <div className="my-10 rounded-lg overflow-hidden bg-[#0f172a] shadow-md border border-slate-800">
             <div className="flex gap-2 px-4 py-2 bg-slate-900 border-b border-slate-800">
               <span className="w-3 h-3 rounded-full bg-red-500/80"></span>
               <span className="w-3 h-3 rounded-full bg-yellow-500/80"></span>
@@ -70,7 +71,7 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = 
         );
       case 'quote':
         return (
-          <blockquote className="border-l-4 border-brand-blue pl-6 py-2 my-8 italic text-xl text-primary font-medium bg-blue-50/50 dark:bg-blue-900/10 rounded-r-lg">
+          <blockquote className="border-l-4 border-brand-blue pl-6 py-3 my-10 italic text-xl md:text-2xl text-primary font-medium bg-blue-50/50 dark:bg-blue-900/10 rounded-r-lg leading-relaxed">
             "{block.content}"
           </blockquote>
         );
@@ -78,7 +79,7 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = 
         let items: string[] = [];
         try { items = JSON.parse(block.content); } catch (e) { items = []; }
         return (
-          <ul className="list-disc pl-5 my-6 space-y-2 text-lg text-secondary leading-8">
+          <ul className="list-disc pl-5 my-8 space-y-3 text-lg text-secondary leading-[1.8]">
             {items.map((item, i) => (
               <li key={i} dangerouslySetInnerHTML={{__html: parseMarkdown(item)}} />
             ))}
@@ -86,7 +87,7 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = 
         );
       default:
         // Paragraph: Also parse markdown here since we stopped converting on paste
-        return <div dangerouslySetInnerHTML={{__html: parseMarkdown(block.content)}} className="mb-6 text-lg leading-8 text-secondary" />;
+        return <div dangerouslySetInnerHTML={{__html: parseMarkdown(block.content)}} className="mb-8 text-lg leading-[1.8] text-secondary" />;
     }
   };
 
@@ -154,11 +155,12 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = 
                   src={post.featuredImage} 
                   alt={post.title} 
                   className="w-full h-auto rounded-2xl shadow-xl mb-12 -mt-24 border-4 border-white dark:border-slate-800 relative z-20"
+                  loading="lazy"
                />
              )}
 
              <div className="prose prose-lg prose-slate dark:prose-invert max-w-none">
-              <p className="lead text-xl text-secondary font-medium mb-8">{post.excerpt}</p>
+              <p className="lead text-xl md:text-2xl text-secondary font-medium mb-12 leading-[1.8]">{post.excerpt}</p>
               {post.blocks.map(block => (
                 <div key={block.id}>{renderBlock(block)}</div>
               ))}
@@ -191,6 +193,7 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = 
                            src={related.featuredImage} 
                            alt={related.title} 
                            className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" 
+                           loading="lazy"
                          />
                          <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider text-slate-900">
                             {related.category}
