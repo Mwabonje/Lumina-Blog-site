@@ -20,7 +20,7 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = 
       .replace(/__(.*?)__/g, '<strong>$1</strong>')
       .replace(/(?<!\*)\*(?!\*)(.*?)\*/g, '<em>$1</em>')
       .replace(/_(.*?)_/g, '<em>$1</em>')
-      .replace(/`([^`]+)`/g, '<code class="bg-slate-100 px-1 rounded text-red-500 font-mono text-sm">$1</code>');
+      .replace(/`([^`]+)`/g, '<code class="bg-slate-100 dark:bg-slate-800 px-1 rounded text-red-500 font-mono text-sm">$1</code>');
   };
 
   const renderBlock = (block: ContentBlock) => {
@@ -51,7 +51,7 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = 
               loading="lazy"
             />
             {block.metadata?.caption && (
-              <figcaption className="text-center text-xs text-gray-500 mt-2 italic">{block.metadata.caption}</figcaption>
+              <figcaption className="text-center text-xs text-secondary mt-2 italic">{block.metadata.caption}</figcaption>
             )}
           </figure>
         );
@@ -70,7 +70,7 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = 
         );
       case 'quote':
         return (
-          <blockquote className="border-l-4 border-brand-blue pl-6 py-2 my-8 italic text-xl text-primary font-medium bg-blue-50/50 rounded-r-lg">
+          <blockquote className="border-l-4 border-brand-blue pl-6 py-2 my-8 italic text-xl text-primary font-medium bg-blue-50/50 dark:bg-blue-900/10 rounded-r-lg">
             "{block.content}"
           </blockquote>
         );
@@ -153,23 +153,23 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = 
                <img 
                   src={post.featuredImage} 
                   alt={post.title} 
-                  className="w-full h-auto rounded-2xl shadow-xl mb-12 -mt-24 border-4 border-white relative z-20"
+                  className="w-full h-auto rounded-2xl shadow-xl mb-12 -mt-24 border-4 border-white dark:border-slate-800 relative z-20"
                />
              )}
 
-             <div className="prose prose-lg prose-slate max-w-none">
+             <div className="prose prose-lg prose-slate dark:prose-invert max-w-none">
               <p className="lead text-xl text-secondary font-medium mb-8">{post.excerpt}</p>
               {post.blocks.map(block => (
                 <div key={block.id}>{renderBlock(block)}</div>
               ))}
             </div>
 
-            <hr className="my-12 border-slate-200" />
+            <hr className="my-12 border-slate-200 dark:border-slate-800" />
             
             {/* Tags */}
             <div className="flex flex-wrap gap-2">
               {post.tags.map(tag => (
-                <span key={tag} className="px-3 py-1 bg-slate-100 text-slate-600 text-sm font-medium rounded-full hover:bg-slate-200 transition-colors cursor-pointer">
+                <span key={tag} className="px-3 py-1 bg-slate-100 dark:bg-slate-800 text-secondary text-sm font-medium rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer">
                   #{tag}
                 </span>
               ))}
@@ -180,19 +180,19 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = 
 
       {/* Related Posts Section */}
       {!previewMode && relatedPosts.length > 0 && (
-        <div className="bg-slate-50 py-20 border-t border-slate-200">
+        <div className="bg-slate-50 dark:bg-slate-900/50 py-20 border-t border-slate-200 dark:border-slate-800">
            <div className="max-w-7xl mx-auto px-6">
               <h3 className="text-2xl font-bold text-primary mb-10 text-center md:text-left">You might also like</h3>
               <div className="grid md:grid-cols-3 gap-8">
                  {relatedPosts.map(related => (
-                   <Link key={related.id} to={`/blog/${related.slug}`} className="group block bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 flex flex-col h-full">
+                   <Link key={related.id} to={`/blog/${related.slug}`} className="group block bg-surface rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 dark:border-slate-800 flex flex-col h-full">
                       <div className="h-48 overflow-hidden relative">
                          <img 
                            src={related.featuredImage} 
                            alt={related.title} 
                            className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" 
                          />
-                         <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider text-primary">
+                         <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider text-slate-900">
                             {related.category}
                          </div>
                       </div>
@@ -203,7 +203,7 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = 
                          <p className="text-sm text-secondary line-clamp-2 mb-4 flex-grow">
                            {related.excerpt}
                          </p>
-                         <div className="text-xs text-gray-400 font-medium pt-4 border-t border-slate-50 flex items-center gap-2">
+                         <div className="text-xs text-gray-400 font-medium pt-4 border-t border-slate-50 dark:border-slate-800 flex items-center gap-2">
                             <span>{related.authorName}</span>
                             <span>•</span>
                             <span>{related.publishedAt ? new Date(related.publishedAt).toLocaleDateString() : ''}</span>

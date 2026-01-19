@@ -55,33 +55,33 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
         onClick={onClose}
       ></div>
       
-      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-lg bg-surface rounded-2xl shadow-2xl overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200">
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors z-10"
+          className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors z-10"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
 
-        <div className="p-8 sm:p-10">
+        <div className="p-8 sm:p-10 text-primary">
           {submitted ? (
             <div className="text-center py-10">
               <div className="w-16 h-16 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
               </div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-2">Message Sent!</h3>
-              <p className="text-slate-500">Thanks for reaching out. We'll get back to you shortly.</p>
+              <h3 className="text-2xl font-bold mb-2">Message Sent!</h3>
+              <p className="text-secondary">Thanks for reaching out. We'll get back to you shortly.</p>
             </div>
           ) : (
             <>
               <div className="mb-8">
-                <h3 className="text-2xl font-bold text-slate-900 mb-2">Get in touch</h3>
-                <p className="text-slate-500">Have a question or proposal? We'd love to hear from you.</p>
+                <h3 className="text-2xl font-bold mb-2">Get in touch</h3>
+                <p className="text-secondary">Have a question or proposal? We'd love to hear from you.</p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                  <label htmlFor="name" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Name</label>
+                  <label htmlFor="name" className="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">Name</label>
                   <input
                     type="text"
                     id="name"
@@ -89,12 +89,12 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
                     required
                     value={formData.name}
                     onChange={e => setFormData({...formData, name: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 px-4 py-3 rounded-xl focus:ring-2 focus:ring-brand-blue focus:border-transparent outline-none transition-all placeholder-slate-400"
+                    className="w-full bg-background border border-slate-200 dark:border-slate-700 text-primary px-4 py-3 rounded-xl focus:ring-2 focus:ring-brand-blue focus:border-transparent outline-none transition-all placeholder-slate-400"
                     placeholder="Jane Doe"
                   />
                 </div>
                 <div>
-                  <label htmlFor="email" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Email</label>
+                  <label htmlFor="email" className="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">Email</label>
                   <input
                     type="email"
                     id="email"
@@ -102,12 +102,12 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
                     required
                     value={formData.email}
                     onChange={e => setFormData({...formData, email: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 px-4 py-3 rounded-xl focus:ring-2 focus:ring-brand-blue focus:border-transparent outline-none transition-all placeholder-slate-400"
+                    className="w-full bg-background border border-slate-200 dark:border-slate-700 text-primary px-4 py-3 rounded-xl focus:ring-2 focus:ring-brand-blue focus:border-transparent outline-none transition-all placeholder-slate-400"
                     placeholder="jane@example.com"
                   />
                 </div>
                 <div>
-                  <label htmlFor="message" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Message</label>
+                  <label htmlFor="message" className="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">Message</label>
                   <textarea
                     id="message"
                     name="message"
@@ -115,7 +115,7 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
                     rows={4}
                     value={formData.message}
                     onChange={e => setFormData({...formData, message: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 px-4 py-3 rounded-xl focus:ring-2 focus:ring-brand-blue focus:border-transparent outline-none transition-all placeholder-slate-400 resize-none"
+                    className="w-full bg-background border border-slate-200 dark:border-slate-700 text-primary px-4 py-3 rounded-xl focus:ring-2 focus:ring-brand-blue focus:border-transparent outline-none transition-all placeholder-slate-400 resize-none"
                     placeholder="How can we help you?"
                   />
                 </div>
