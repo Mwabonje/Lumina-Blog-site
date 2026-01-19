@@ -29,7 +29,7 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = 
         const Tag = `h${block.metadata?.level || 2}` as React.ElementType;
         return (
           <div className="mt-16 mb-8">
-            <Tag className="font-bold text-primary leading-tight text-2xl md:text-3xl mb-6">
+            <Tag className="font-bold text-slate-900 dark:text-slate-50 leading-tight text-2xl md:text-3xl mb-6">
               {block.content}
             </Tag>
             {block.metadata?.image && (
@@ -52,7 +52,7 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = 
               loading="lazy"
             />
             {block.metadata?.caption && (
-              <figcaption className="text-center text-sm text-secondary mt-3 italic">{block.metadata.caption}</figcaption>
+              <figcaption className="text-center text-sm text-slate-500 dark:text-slate-400 mt-3 italic">{block.metadata.caption}</figcaption>
             )}
           </figure>
         );
@@ -71,7 +71,7 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = 
         );
       case 'quote':
         return (
-          <blockquote className="border-l-4 border-brand-blue pl-6 py-3 my-10 italic text-xl md:text-2xl text-primary font-medium bg-blue-50/50 dark:bg-blue-900/10 rounded-r-lg leading-relaxed">
+          <blockquote className="border-l-4 border-brand-blue pl-6 py-3 my-10 italic text-xl md:text-2xl text-slate-800 dark:text-slate-200 font-medium bg-blue-50/50 dark:bg-blue-900/10 rounded-r-lg leading-relaxed">
             "{block.content}"
           </blockquote>
         );
@@ -79,7 +79,7 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = 
         let items: string[] = [];
         try { items = JSON.parse(block.content); } catch (e) { items = []; }
         return (
-          <ul className="list-disc pl-5 my-8 space-y-3 text-lg text-secondary leading-[1.8]">
+          <ul className="list-disc pl-5 my-8 space-y-3 text-lg text-slate-700 dark:text-slate-300 leading-[1.8]">
             {items.map((item, i) => (
               <li key={i} dangerouslySetInnerHTML={{__html: parseMarkdown(item)}} />
             ))}
@@ -87,7 +87,7 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = 
         );
       default:
         // Paragraph: Also parse markdown here since we stopped converting on paste
-        return <div dangerouslySetInnerHTML={{__html: parseMarkdown(block.content)}} className="mb-8 text-lg leading-[1.8] text-secondary" />;
+        return <div dangerouslySetInnerHTML={{__html: parseMarkdown(block.content)}} className="mb-8 text-lg leading-[1.8] text-slate-700 dark:text-slate-300" />;
     }
   };
 
@@ -160,7 +160,7 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = 
              )}
 
              <div className="prose prose-lg prose-slate dark:prose-invert max-w-none">
-              <p className="lead text-xl md:text-2xl text-secondary font-medium mb-12 leading-[1.8]">{post.excerpt}</p>
+              <p className="lead text-xl md:text-2xl text-slate-900 dark:text-slate-100 font-medium mb-12 leading-[1.8]">{post.excerpt}</p>
               {post.blocks.map(block => (
                 <div key={block.id}>{renderBlock(block)}</div>
               ))}
