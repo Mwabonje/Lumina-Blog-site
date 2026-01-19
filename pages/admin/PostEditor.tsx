@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { BlogPost, ContentBlock, PostStatus, Category, AISuggestion, SEOData } from '../../types';
 import { getPostById, savePost, getCategories } from '../../services/blogService';
 import { generateSEOSuggestions } from '../../services/geminiService';
+import { compressImage } from '../../utils/imageOptimizer';
 import AdminLayout from '../../components/layout/AdminLayout';
 import SEOHead from '../../components/ui/SEOHead';
 import ArticleTemplate from '../../components/blog/ArticleTemplate';
@@ -29,6 +30,7 @@ const PostEditor = () => {
   const [showAdvancedSEO, setShowAdvancedSEO] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [processingImage, setProcessingImage] = useState(false);
   
   // Focus Management
   const blockRefs = useRef<{ [key: string]: HTMLTextAreaElement | HTMLInputElement | null }>({});
@@ -147,7 +149,7 @@ const PostEditor = () => {
         excerpt,
         status,
         category: categoryId,
-        featuredImage: featuredImage || 'https://picsum.photos/800/600',
+        featuredImage: featuredImage || 'https://picsum.photos/800/600.webp',
         authorId: 'admin-1',
         authorName: authorName,
         authorTitle: authorTitle,
@@ -209,32 +211,55 @@ const PostEditor = () => {
     setBlocks(newBlocks);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === 'string') {
-        updateBlock(idx, reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
+    setProcessingImage(true);
+    try {
+      // Compress and optimize image to WebP
+      const optimizedDataUrl = await compressImage(file);
+      updateBlock(idx, optimizedDataUrl);
+    } catch (err) {
+      console.error("Image processing failed", err);
+      alert("Failed to process image.");
+    } finally {
+      setProcessingImage(false);
+    }
   };
   
-  const handleHeadingImageUpload = (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
+  const handleHeadingImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === 'string') {
-        const newBlocks = [...blocks];
-        newBlocks[idx].metadata = { ...newBlocks[idx].metadata, image: reader.result };
-        setBlocks(newBlocks);
-      }
-    };
-    reader.readAsDataURL(file);
+    setProcessingImage(true);
+    try {
+      const optimizedDataUrl = await compressImage(file);
+      const newBlocks = [...blocks];
+      newBlocks[idx].metadata = { ...newBlocks[idx].metadata, image: optimizedDataUrl };
+      setBlocks(newBlocks);
+    } catch (err) {
+      console.error("Image processing failed", err);
+      alert("Failed to process image.");
+    } finally {
+      setProcessingImage(false);
+    }
+  };
+
+  const handleFeaturedImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setProcessingImage(true);
+    try {
+      const optimizedDataUrl = await compressImage(file);
+      setFeaturedImage(optimizedDataUrl);
+    } catch (err) {
+      console.error("Image processing failed", err);
+      alert("Failed to process image.");
+    } finally {
+      setProcessingImage(false);
+    }
   };
 
   const removeHeadingImage = (idx: number) => {
@@ -424,6 +449,15 @@ const PostEditor = () => {
           </div>
         </div>
 
+        {processingImage && (
+          <div className="fixed inset-0 bg-black/20 z-[200] flex items-center justify-center">
+            <div className="bg-white p-4 rounded-lg shadow-lg flex items-center gap-3">
+              <svg className="animate-spin h-5 w-5 text-brand-blue" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              <span className="text-sm font-medium">Optimizing image...</span>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content Area */}
           <div className="lg:col-span-2 space-y-6">
@@ -563,7 +597,7 @@ const PostEditor = () => {
                                   <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                 </div>
                                 <p className="text-sm text-slate-500 font-medium mb-1">Click to Upload Image</p>
-                                <p className="text-xs text-slate-400 mb-4">SVG, PNG, JPG or GIF (max. 3MB)</p>
+                                <p className="text-xs text-slate-400 mb-4">Optimized to WebP automatically</p>
                                 <input 
                                   type="file" 
                                   accept="image/*"
@@ -766,15 +800,41 @@ const PostEditor = () => {
             
              <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
               <h3 className="font-bold text-sm text-slate-900 mb-4 uppercase tracking-wider">Featured Image</h3>
-              <input 
-                type="text" 
-                value={featuredImage}
-                onChange={e => setFeaturedImage(e.target.value)}
-                placeholder="Image URL"
-                className="w-full p-2 border border-slate-200 rounded-lg text-sm mb-2"
-              />
+              
+              <div className="mb-3">
+                 <input 
+                   type="text" 
+                   value={featuredImage}
+                   onChange={e => setFeaturedImage(e.target.value)}
+                   placeholder="Image URL"
+                   className="w-full p-2 border border-slate-200 rounded-lg text-sm mb-2"
+                 />
+                 <div className="flex items-center gap-2">
+                   <div className="h-px bg-slate-200 flex-grow"></div>
+                   <span className="text-xs text-slate-400 uppercase">OR UPLOAD</span>
+                   <div className="h-px bg-slate-200 flex-grow"></div>
+                 </div>
+                 <label className="block mt-2 cursor-pointer border border-dashed border-slate-300 rounded-lg p-2 text-center hover:bg-slate-50 hover:border-brand-blue transition-colors">
+                    <span className="text-xs text-slate-500 font-medium">Click to upload (Auto-WebP)</span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      className="hidden" 
+                      onChange={handleFeaturedImageUpload}
+                    />
+                 </label>
+              </div>
+
               {featuredImage && (
-                <img src={featuredImage} alt="Featured" className="w-full h-32 object-cover rounded-lg" />
+                <div className="relative group/featured">
+                  <img src={featuredImage} alt="Featured" className="w-full h-32 object-cover rounded-lg" />
+                   <button 
+                      onClick={() => setFeaturedImage('')} 
+                      className="absolute top-2 right-2 bg-white text-red-500 p-1.5 rounded-full shadow-md opacity-0 group-hover/featured:opacity-100 transition-opacity"
+                   >
+                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                   </button>
+                </div>
               )}
             </div>
 

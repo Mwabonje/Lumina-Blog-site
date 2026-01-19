@@ -38,6 +38,7 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = 
                 alt={block.content}
                 className="w-full h-auto max-h-[500px] object-cover rounded-xl shadow-sm mt-6"
                 loading="lazy"
+                decoding="async"
               />
             )}
           </div>
@@ -50,6 +51,7 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = 
               alt={block.metadata?.alt || 'Blog image'} 
               className="w-full rounded-2xl shadow-md"
               loading="lazy"
+              decoding="async"
             />
             {block.metadata?.caption && (
               <figcaption className="text-center text-sm text-slate-500 dark:text-slate-400 mt-3 italic">{block.metadata.caption}</figcaption>
@@ -155,7 +157,9 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = 
                   src={post.featuredImage} 
                   alt={post.title} 
                   className="w-full h-auto rounded-2xl shadow-xl mb-12 -mt-24 border-4 border-white dark:border-slate-800 relative z-20"
-                  loading="lazy"
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
                />
              )}
 
@@ -194,6 +198,7 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = 
                            alt={related.title} 
                            className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" 
                            loading="lazy"
+                           decoding="async"
                          />
                          <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider text-slate-900">
                             {related.category}

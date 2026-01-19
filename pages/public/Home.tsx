@@ -46,7 +46,9 @@ const Home = () => {
                     src={featured.featuredImage} 
                     alt={featured.title} 
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
-                    loading="lazy"
+                    loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
                    />
                 </div>
              </div>
@@ -93,6 +95,7 @@ const Home = () => {
                     alt={post.title} 
                     className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
                     loading="lazy"
+                    decoding="async"
                   />
                 </Link>
                 
