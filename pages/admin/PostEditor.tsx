@@ -315,10 +315,11 @@ const PostEditor = () => {
        }
 
        if (bufferType === null) {
-          const isShort = trimmed.length < 150;
-          const hasNoPeriod = !trimmed.endsWith('.');
+          const isShort = trimmed.length < 100;
+          // Improved detection: don't convert lines ending in :, ;, or , to headings
+          const hasTerminalPunctuation = ['.', ':', ';', ','].some(c => trimmed.endsWith(c));
           
-          if (isShort && hasNoPeriod) {
+          if (isShort && !hasTerminalPunctuation) {
               parsedBlocks.push({
                  id: Date.now().toString() + Math.random(),
                  type: 'heading',
@@ -331,10 +332,10 @@ const PostEditor = () => {
           bufferContent.push(trimmed);
        } else if (bufferType === 'list') {
           flush();
-          const isShort = trimmed.length < 150;
-          const hasNoPeriod = !trimmed.endsWith('.');
+          const isShort = trimmed.length < 100;
+          const hasTerminalPunctuation = ['.', ':', ';', ','].some(c => trimmed.endsWith(c));
           
-          if (isShort && hasNoPeriod) {
+          if (isShort && !hasTerminalPunctuation) {
              parsedBlocks.push({
                  id: Date.now().toString() + Math.random(),
                  type: 'heading',
