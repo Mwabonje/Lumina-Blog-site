@@ -1,14 +1,16 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { BlogPost, ContentBlock } from '../../types';
 import PublicLayout from '../layout/PublicLayout';
 import SEOHead from '../ui/SEOHead';
 
 interface ArticleTemplateProps {
   post: BlogPost;
+  relatedPosts?: BlogPost[];
   previewMode?: boolean;
 }
 
-const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, previewMode = false }) => {
+const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = [], previewMode = false }) => {
   
   // Helper to parse simple markdown to HTML for display
   const parseMarkdown = (text: string) => {
@@ -175,6 +177,44 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, previewMode = f
           </div>
         </div>
       </article>
+
+      {/* Related Posts Section */}
+      {!previewMode && relatedPosts.length > 0 && (
+        <div className="bg-slate-50 py-20 border-t border-slate-200">
+           <div className="max-w-7xl mx-auto px-6">
+              <h3 className="text-2xl font-bold text-primary mb-10 text-center md:text-left">You might also like</h3>
+              <div className="grid md:grid-cols-3 gap-8">
+                 {relatedPosts.map(related => (
+                   <Link key={related.id} to={`/blog/${related.slug}`} className="group block bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 flex flex-col h-full">
+                      <div className="h-48 overflow-hidden relative">
+                         <img 
+                           src={related.featuredImage} 
+                           alt={related.title} 
+                           className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" 
+                         />
+                         <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider text-primary">
+                            {related.category}
+                         </div>
+                      </div>
+                      <div className="p-6 flex-1 flex flex-col">
+                         <h4 className="font-bold text-lg text-primary mb-3 leading-snug group-hover:text-brand-blue transition-colors">
+                           {related.title}
+                         </h4>
+                         <p className="text-sm text-secondary line-clamp-2 mb-4 flex-grow">
+                           {related.excerpt}
+                         </p>
+                         <div className="text-xs text-gray-400 font-medium pt-4 border-t border-slate-50 flex items-center gap-2">
+                            <span>{related.authorName}</span>
+                            <span>•</span>
+                            <span>{related.publishedAt ? new Date(related.publishedAt).toLocaleDateString() : ''}</span>
+                         </div>
+                      </div>
+                   </Link>
+                 ))}
+              </div>
+           </div>
+        </div>
+      )}
     </PublicLayout>
   );
 };

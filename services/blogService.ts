@@ -113,6 +113,23 @@ export const getPostById = async (id: string): Promise<BlogPost | undefined> => 
   return mapRowToPost(data);
 };
 
+export const getRelatedPosts = async (currentPostId: string, category: string): Promise<BlogPost[]> => {
+  const { data, error } = await supabase
+    .from('posts')
+    .select('*')
+    .eq('status', PostStatus.PUBLISHED)
+    .eq('category', category)
+    .neq('id', currentPostId)
+    .limit(3);
+
+  if (error) {
+    console.error('Error fetching related posts:', error);
+    return [];
+  }
+
+  return (data || []).map(mapRowToPost);
+};
+
 export const savePost = async (post: BlogPost): Promise<BlogPost> => {
   // Calculate reading time before saving
   const text = post.blocks.map(b => b.content).join(' ');
