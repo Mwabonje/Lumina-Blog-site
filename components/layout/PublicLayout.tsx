@@ -73,12 +73,6 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
              <Link to="/about" className="hover:text-white transition-colors">About</Link>
              <Link to="/blog" className="hover:text-white transition-colors">Blog</Link>
           </div>
-          <Link 
-            to="/admin" 
-            className="text-gray-700 hover:text-gray-500 transition-colors text-xs font-medium mt-4"
-          >
-            Admin Login
-          </Link>
         </div>
       </footer>
     </div>
