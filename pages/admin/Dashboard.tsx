@@ -80,7 +80,7 @@ const Dashboard = () => {
           <h1 className="text-3xl font-serif font-bold text-primary">Overview</h1>
           <p className="text-stone-500 mt-1">Manage your editorial content.</p>
         </div>
-        <Link to="/admin/posts/new" className="bg-primary text-white px-6 py-2.5 rounded-lg text-sm font-medium tracking-wide hover:bg-stone-800 transition shadow-md flex items-center gap-2">
+        <Link to="/admin/posts/new" className="bg-primary text-white px-6 py-2.5 rounded-lg text-sm font-medium tracking-wide hover:bg-stone-800 transition shadow-md flex items-center gap-2 whitespace-nowrap">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
           New Story
         </Link>
@@ -88,7 +88,7 @@ const Dashboard = () => {
 
       {/* Search Bar */}
       <div className="mb-6">
-        <div className="relative max-w-md">
+        <div className="relative max-w-md w-full">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -136,33 +136,33 @@ const Dashboard = () => {
             <table className="w-full text-left">
               <thead className="bg-stone-50 border-b border-stone-200">
                 <tr>
-                  <th className="p-5 font-bold text-xs text-stone-500 uppercase tracking-wider">Title</th>
-                  <th className="p-5 font-bold text-xs text-stone-500 uppercase tracking-wider">Status</th>
-                  <th className="p-5 font-bold text-xs text-stone-500 uppercase tracking-wider">Published/Scheduled</th>
-                  <th className="p-5 font-bold text-xs text-stone-500 uppercase tracking-wider text-right">Actions</th>
+                  <th className="p-4 lg:p-5 font-bold text-xs text-stone-500 uppercase tracking-wider">Title</th>
+                  <th className="p-4 lg:p-5 font-bold text-xs text-stone-500 uppercase tracking-wider">Status</th>
+                  <th className="p-4 lg:p-5 font-bold text-xs text-stone-500 uppercase tracking-wider">Published/Scheduled</th>
+                  <th className="p-4 lg:p-5 font-bold text-xs text-stone-500 uppercase tracking-wider text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
                 {filteredPosts.map(post => (
                   <tr key={post.id} className="hover:bg-stone-50/50 transition-colors group">
-                    <td className="p-5 max-w-md">
+                    <td className="p-4 lg:p-5 max-w-md min-w-[200px]">
                       <Link to={`/admin/posts/${post.id}`} className="font-serif font-bold text-primary text-lg hover:text-brand-blue transition-colors block mb-1">
                         {post.title}
                       </Link>
                       <div className="flex items-center gap-2 text-xs text-stone-400 font-mono">
-                        <span>/{post.slug}</span>
+                        <span className="truncate max-w-[150px]">/{post.slug}</span>
                         {post.category && (
                           <>
-                            <span className="w-1 h-1 rounded-full bg-stone-300"></span>
-                            <span className="text-stone-500 font-sans">{post.category}</span>
+                            <span className="w-1 h-1 rounded-full bg-stone-300 flex-shrink-0"></span>
+                            <span className="text-stone-500 font-sans whitespace-nowrap">{post.category}</span>
                           </>
                         )}
                       </div>
                     </td>
-                    <td className="p-5 whitespace-nowrap">
+                    <td className="p-4 lg:p-5 whitespace-nowrap">
                       <StatusBadge status={post.status} />
                     </td>
-                    <td className="p-5 text-sm text-stone-500 font-medium whitespace-nowrap">
+                    <td className="p-4 lg:p-5 text-sm text-stone-500 font-medium whitespace-nowrap">
                       {post.publishedAt ? (
                         post.status === PostStatus.SCHEDULED ? (
                           new Date(post.publishedAt).toLocaleString('en-US', {
@@ -177,7 +177,7 @@ const Dashboard = () => {
                         )
                       ) : '—'}
                     </td>
-                    <td className="p-5 text-right whitespace-nowrap space-x-2">
+                    <td className="p-4 lg:p-5 text-right whitespace-nowrap space-x-2">
                       <Link 
                         to={`/admin/posts/${post.id}`} 
                         className="inline-flex items-center px-3 py-1.5 border border-stone-200 text-xs font-medium rounded-md text-stone-700 bg-white hover:bg-stone-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-blue transition-colors shadow-sm"
