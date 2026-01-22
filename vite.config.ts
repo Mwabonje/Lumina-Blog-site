@@ -10,8 +10,9 @@ export default defineConfig(({ mode }) => {
     define: {
       // Fallback to empty string if undefined to prevent ReferenceError
       'process.env.API_KEY': JSON.stringify(env.API_KEY || ''),
-      'process.env.SUPABASE_URL': JSON.stringify(env.SUPABASE_URL || ''),
-      'process.env.SUPABASE_ANON_KEY': JSON.stringify(env.SUPABASE_ANON_KEY || ''),
+      // Use provided Supabase credentials as default fallbacks
+      'process.env.SUPABASE_URL': JSON.stringify(env.SUPABASE_URL || 'https://jvniieomnaeiibrnvidz.supabase.co'),
+      'process.env.SUPABASE_ANON_KEY': JSON.stringify(env.SUPABASE_ANON_KEY || 'sb_publishable_EyalFOiT9Y9ozrdbzfBP3Q_Rt5WBbMY'),
       'process.env.ADMIN_EMAIL': JSON.stringify(env.ADMIN_EMAIL || 'admin@lumina.com'),
       'process.env.ADMIN_PASSWORD': JSON.stringify(env.ADMIN_PASSWORD || 'password'),
     }
