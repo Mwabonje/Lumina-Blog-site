@@ -8,8 +8,12 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     define: {
-      // Fallback to empty string if undefined to prevent ReferenceError: process is not defined
-      'process.env.API_KEY': JSON.stringify(env.API_KEY || '')
+      // Fallback to empty string if undefined to prevent ReferenceError
+      'process.env.API_KEY': JSON.stringify(env.API_KEY || ''),
+      'process.env.SUPABASE_URL': JSON.stringify(env.SUPABASE_URL || ''),
+      'process.env.SUPABASE_ANON_KEY': JSON.stringify(env.SUPABASE_ANON_KEY || ''),
+      'process.env.ADMIN_EMAIL': JSON.stringify(env.ADMIN_EMAIL || 'admin@lumina.com'),
+      'process.env.ADMIN_PASSWORD': JSON.stringify(env.ADMIN_PASSWORD || 'password'),
     }
   };
 });

@@ -82,7 +82,7 @@ const Login = () => {
         </div>
         
         <div className="mt-8 text-center text-xs text-slate-500">
-           <p>Demo Access: admin@lumina.com / password</p>
+           <p>Secure Login</p>
         </div>
       </div>
     </div>

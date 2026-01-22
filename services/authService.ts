@@ -1,8 +1,11 @@
 import { User } from '../types';
 
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@lumina.com';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'password';
+
 const ADMIN_USER: User = {
   id: 'admin-1',
-  email: 'admin@lumina.com',
+  email: ADMIN_EMAIL,
   name: 'Admin User',
   role: 'admin',
 };
@@ -12,7 +15,7 @@ export const login = async (email: string, password: string): Promise<User> => {
   // Simulate API delay
   await new Promise((resolve) => setTimeout(resolve, 800));
 
-  if (email === 'admin@lumina.com' && password === 'password') {
+  if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
     localStorage.setItem('lumina_user', JSON.stringify(ADMIN_USER));
     return ADMIN_USER;
   }
