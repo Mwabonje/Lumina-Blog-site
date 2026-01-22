@@ -19,10 +19,13 @@ const AUTHOR_TITLES = [
   'Guest Contributor'
 ];
 
+const AUTO_SAVE_INTERVAL = 60000; // 60 seconds
+
 const PostEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEditMode = id && id !== 'new';
+  const autoSaveKey = `lumina_autosave_${id || 'new'}`;
 
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
@@ -31,6 +34,7 @@ const PostEditor = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [saving, setSaving] = useState(false);
   const [processingImage, setProcessingImage] = useState(false);
+  const [lastAutoSave, setLastAutoSave] = useState<string | null>(null);
   
   // Focus Management
   const blockRefs = useRef<{ [key: string]: HTMLTextAreaElement | HTMLInputElement | null }>({});
@@ -64,51 +68,147 @@ const PostEditor = () => {
   });
   const [keywordsInput, setKeywordsInput] = useState('');
 
+  // Ref to hold current state for auto-saver (avoids stale closures in setInterval)
+  const currentStateRef = useRef({
+    title, slug, excerpt, authorName, authorTitle, status, categoryId, 
+    blocks, featuredImage, scheduledFor, seo, keywordsInput
+  });
+
+  // Update ref whenever state changes
+  useEffect(() => {
+    currentStateRef.current = {
+      title, slug, excerpt, authorName, authorTitle, status, categoryId, 
+      blocks, featuredImage, scheduledFor, seo, keywordsInput
+    };
+  }, [title, slug, excerpt, authorName, authorTitle, status, categoryId, blocks, featuredImage, scheduledFor, seo, keywordsInput]);
+
+  // --- Auto Save Logic ---
+  useEffect(() => {
+    const timer = setInterval(() => {
+      // Don't auto-save if we are still loading or purely empty new post
+      if (loading) return;
+      
+      const dataToSave = currentStateRef.current;
+      
+      // Basic validation to avoid saving empty "new" posts unnecessarily
+      if (!isEditMode && !dataToSave.title && dataToSave.blocks.length <= 1 && !dataToSave.blocks[0]?.content) {
+         return;
+      }
+
+      localStorage.setItem(autoSaveKey, JSON.stringify({
+        ...dataToSave,
+        timestamp: new Date().toISOString()
+      }));
+      
+      setLastAutoSave(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    }, AUTO_SAVE_INTERVAL);
+
+    return () => clearInterval(timer);
+  }, [autoSaveKey, loading, isEditMode]);
+
+  // --- Initialization & Restore Logic ---
   useEffect(() => {
     const init = async () => {
       const cats = await getCategories();
       setCategories(cats);
       if (cats.length > 0) setCategoryId(cats[0].id);
 
+      // Helper to hydrate state from an object (DB or LocalStorage)
+      const hydrateState = (data: any, isLocal = false) => {
+        setTitle(data.title || '');
+        setSlug(data.slug || '');
+        setExcerpt(data.excerpt || '');
+        setAuthorName(data.authorName || 'Admin User');
+        setAuthorTitle(data.authorTitle || 'Author');
+        setStatus(data.status || PostStatus.DRAFT);
+        setCategoryId(data.category || (cats.length > 0 ? cats[0].name : ''));
+        setBlocks(data.blocks || []);
+        setFeaturedImage(data.featuredImage || '');
+        
+        if (data.scheduledFor) {
+           // Handle ISO string to datetime-local conversion
+           const dateVal = new Date(data.scheduledFor);
+           if (!isNaN(dateVal.getTime())) {
+             setScheduledFor(dateVal.toISOString().slice(0, 16));
+           }
+        } else {
+           setScheduledFor('');
+        }
+
+        // SEO
+        const seoData = data.seo || {};
+        setSeo({
+          metaTitle: seoData.metaTitle || '',
+          metaDescription: seoData.metaDescription || '',
+          keywords: seoData.keywords || [],
+          canonicalUrl: seoData.canonicalUrl || '',
+          ogTitle: seoData.ogTitle || '',
+          ogDescription: seoData.ogDescription || '',
+          ogImage: seoData.ogImage || ''
+        });
+        
+        // Keywords Input
+        if (isLocal && data.keywordsInput !== undefined) {
+           setKeywordsInput(data.keywordsInput);
+        } else if (seoData.keywords) {
+           setKeywordsInput(seoData.keywords.join(', '));
+        }
+
+        if (!isLocal) {
+          // If loading from DB, set original trackers
+          setOriginalStatus(data.status);
+          setOriginalPublishedAt(data.publishedAt);
+        }
+
+        if (isLocal) {
+           setLastAutoSave("Restored draft");
+        }
+      };
+
       if (isEditMode) {
         setLoading(true);
+        // 1. Load from DB
         const post = await getPostById(id);
-        if (post) {
-          setTitle(post.title);
-          setSlug(post.slug);
-          setExcerpt(post.excerpt);
-          setAuthorName(post.authorName || 'Admin User');
-          setAuthorTitle(post.authorTitle || 'Author');
-          setStatus(post.status);
-          setOriginalStatus(post.status);
-          setOriginalPublishedAt(post.publishedAt);
-          setCategoryId(post.category);
-          setBlocks(post.blocks);
-          setFeaturedImage(post.featuredImage);
-          
-          if (post.scheduledFor) {
-            // Convert to datetime-local format (YYYY-MM-DDTHH:mm)
-            setScheduledFor(new Date(post.scheduledFor).toISOString().slice(0, 16));
+        
+        // 2. Check for Local Autosave
+        const localDraft = localStorage.getItem(autoSaveKey);
+        
+        if (localDraft) {
+          try {
+            const parsedDraft = JSON.parse(localDraft);
+            // If we found a local draft, we prioritize it (crash recovery), 
+            // but we keep the original ID/publishedAt from the DB logic.
+            hydrateState(parsedDraft, true);
+            // Ensure we keep original DB metadata if needed
+            if (post) {
+               setOriginalStatus(post.status);
+               setOriginalPublishedAt(post.publishedAt);
+            }
+          } catch (e) {
+            console.error("Failed to parse draft", e);
+            if (post) hydrateState(post);
           }
-          
-          setSeo({
-            metaTitle: post.seo.metaTitle || '',
-            metaDescription: post.seo.metaDescription || '',
-            keywords: post.seo.keywords || [],
-            canonicalUrl: post.seo.canonicalUrl || '',
-            ogTitle: post.seo.ogTitle || '',
-            ogDescription: post.seo.ogDescription || '',
-            ogImage: post.seo.ogImage || ''
-          });
-          setKeywordsInput(post.seo.keywords.join(', '));
+        } else if (post) {
+          hydrateState(post);
         }
+        
         setLoading(false);
       } else {
-        setBlocks([{ id: Date.now().toString(), type: 'paragraph', content: '' }]);
+        // New Post Mode
+        const localDraft = localStorage.getItem(autoSaveKey);
+        if (localDraft) {
+           try {
+             hydrateState(JSON.parse(localDraft), true);
+           } catch(e) {
+             setBlocks([{ id: Date.now().toString(), type: 'paragraph', content: '' }]);
+           }
+        } else {
+           setBlocks([{ id: Date.now().toString(), type: 'paragraph', content: '' }]);
+        }
       }
     };
     init();
-  }, [id, isEditMode]);
+  }, [id, isEditMode, autoSaveKey]);
 
   // Handle auto-focusing new blocks
   useEffect(() => {
@@ -198,6 +298,10 @@ const PostEditor = () => {
       };
 
       await savePost(post);
+      
+      // Clear auto-save on successful manual save
+      localStorage.removeItem(autoSaveKey);
+      
       navigate('/admin/posts');
     } catch (err: any) {
       console.error(err);
@@ -253,6 +357,8 @@ const PostEditor = () => {
     setProcessingImage(true);
     try {
       const optimizedDataUrl = await compressImage(file);
+      
+      // Prompt for Alt Text immediately after upload
       const altText = window.prompt("Enter alternative text for this image (for SEO and accessibility):", "");
 
       const newBlocks = [...blocks];
@@ -466,7 +572,12 @@ const PostEditor = () => {
           <h1 className="text-3xl font-serif font-bold text-slate-900">
             {isEditMode ? 'Edit Post' : 'New Post'}
           </h1>
-          <div className="flex gap-3">
+          <div className="flex gap-3 items-center">
+             {lastAutoSave && (
+               <span className="text-xs text-slate-400 font-medium mr-2 animate-pulse">
+                 Auto-saved: {lastAutoSave}
+               </span>
+             )}
              <button 
               onClick={handleAI}
               disabled={aiLoading}

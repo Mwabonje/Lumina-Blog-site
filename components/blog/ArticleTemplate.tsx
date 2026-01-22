@@ -44,11 +44,13 @@ const ArticleTemplate: React.FC<ArticleTemplateProps> = ({ post, relatedPosts = 
           </div>
         );
       case 'image':
+        // Correctly use the alt metadata if present, falling back to caption or a generic string
+        const altText = block.metadata?.alt || block.metadata?.caption || 'Blog image';
         return (
           <figure className="my-10">
             <img 
               src={block.content} 
-              alt={block.metadata?.alt || block.metadata?.caption || 'Blog image'} 
+              alt={altText} 
               className="w-full rounded-2xl shadow-md"
               loading="lazy"
               decoding="async"
