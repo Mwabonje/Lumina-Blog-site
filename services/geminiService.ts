@@ -3,21 +3,12 @@ import { AISuggestion } from '../types';
 
 // Lazy initialize the client to prevent immediate crashes if env var is missing
 const getAIClient = () => {
-<<<<<<< HEAD
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY || (process as any).env.API_KEY;
   if (!apiKey) {
     console.warn("VITE_GEMINI_API_KEY is missing. AI features will not work.");
     return null;
   }
   return new GoogleGenAI(apiKey);
-=======
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    console.warn("API_KEY is missing. AI features will not work.");
-    return null;
-  }
-  return new GoogleGenAI({ apiKey });
->>>>>>> 1d1aced88b08533ee2c64b6cf5e3bc0bf974cd2d
 };
 
 export const generateSEOSuggestions = async (content: string): Promise<AISuggestion> => {
@@ -27,11 +18,7 @@ export const generateSEOSuggestions = async (content: string): Promise<AISuggest
   }
 
   const model = "gemini-3-flash-preview";
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 1d1aced88b08533ee2c64b6cf5e3bc0bf974cd2d
   try {
     const response = await ai.models.generateContent({
       model,

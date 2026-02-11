@@ -1,9 +1,5 @@
 import { BlogPost, PostStatus, Category, ContentBlock } from '../types';
-<<<<<<< HEAD
 import { insforge } from './insforgeClient';
-=======
-import { supabase } from './supabaseClient';
->>>>>>> 1d1aced88b08533ee2c64b6cf5e3bc0bf974cd2d
 
 const STORAGE_KEY_CATEGORIES = 'lumina_categories';
 
@@ -140,27 +136,6 @@ const mapPostToRow = (post: BlogPost) => ({
   seo: post.seo,
   reading_time_minutes: post.readingTimeMinutes,
   tags: post.tags,
-<<<<<<< HEAD
-
-  if(postsToUpdate.length > 0) {
-    // Optimistically update local data
-    postsToUpdate.forEach((row: any) => { row.status = PostStatus.PUBLISHED; });
-// Fire and forget update
-Promise.all(postsToUpdate.map((row: any) =>
-  insforge.database.from('posts').update({ status: PostStatus.PUBLISHED }).eq('id', row.id)
-)).catch(err => console.warn("Auto-publish failed", err));
-    }
-
-return (data || []).map(mapRowToPost);
-
-  } catch (err) {
-  console.warn("Connection error, using static mocks:", err);
-  if (status) {
-    return MOCK_POSTS.filter(p => p.status === status);
-  }
-  return MOCK_POSTS;
-}
-=======
   category: post.category
 });
 
@@ -168,7 +143,7 @@ return (data || []).map(mapRowToPost);
 
 export const getPosts = async (status?: PostStatus): Promise<BlogPost[]> => {
   try {
-    let query = supabase
+    let query = insforge.database
       .from('posts')
       .select('*')
       .order('published_at', { ascending: false });
@@ -183,12 +158,12 @@ export const getPosts = async (status?: PostStatus): Promise<BlogPost[]> => {
     const { data, error } = await query;
 
     if (error) throw error;
-    
+
     // Auto-publish logic for Real DB
     const now = new Date();
-    const postsToUpdate = (data || []).filter((row: any) => 
-      row.status === PostStatus.SCHEDULED && 
-      row.scheduled_for && 
+    const postsToUpdate = (data || []).filter((row: any) =>
+      row.status === PostStatus.SCHEDULED &&
+      row.scheduled_for &&
       new Date(row.scheduled_for) <= now
     );
 
@@ -196,8 +171,8 @@ export const getPosts = async (status?: PostStatus): Promise<BlogPost[]> => {
       // Optimistically update local data
       postsToUpdate.forEach((row: any) => { row.status = PostStatus.PUBLISHED; });
       // Fire and forget update
-      Promise.all(postsToUpdate.map((row: any) => 
-        supabase.from('posts').update({ status: PostStatus.PUBLISHED }).eq('id', row.id)
+      Promise.all(postsToUpdate.map((row: any) =>
+        insforge.database.from('posts').update({ status: PostStatus.PUBLISHED }).eq('id', row.id)
       )).catch(err => console.warn("Auto-publish failed", err));
     }
 
@@ -205,24 +180,17 @@ export const getPosts = async (status?: PostStatus): Promise<BlogPost[]> => {
 
   } catch (err) {
     console.warn("Connection error, using static mocks:", err);
-    // If Supabase fails, fallback to static mocks so the site isn't empty, 
-    // but DO NOT use local storage for persistence.
     if (status) {
       return MOCK_POSTS.filter(p => p.status === status);
     }
     return MOCK_POSTS;
   }
->>>>>>> 1d1aced88b08533ee2c64b6cf5e3bc0bf974cd2d
 };
 
 export const getPostBySlug = async (slug: string): Promise<BlogPost | undefined> => {
   try {
     const nowStr = new Date().toISOString();
-<<<<<<< HEAD
     const { data, error } = await insforge.database
-=======
-    const { data, error } = await supabase
->>>>>>> 1d1aced88b08533ee2c64b6cf5e3bc0bf974cd2d
       .from('posts')
       .select('*')
       .eq('slug', slug)
@@ -230,14 +198,9 @@ export const getPostBySlug = async (slug: string): Promise<BlogPost | undefined>
       .single();
 
     if (error) {
-<<<<<<< HEAD
       // PGRST116 is code for 'no rows returned' in postgrest
       if ((error as any).code !== 'PGRST116') throw error;
       return undefined;
-=======
-      if (error.code !== 'PGRST116') throw error; 
-      return undefined; 
->>>>>>> 1d1aced88b08533ee2c64b6cf5e3bc0bf974cd2d
     }
 
     return mapRowToPost(data);
@@ -249,11 +212,7 @@ export const getPostBySlug = async (slug: string): Promise<BlogPost | undefined>
 
 export const getPostById = async (id: string): Promise<BlogPost | undefined> => {
   try {
-<<<<<<< HEAD
     const { data, error } = await insforge.database
-=======
-    const { data, error } = await supabase
->>>>>>> 1d1aced88b08533ee2c64b6cf5e3bc0bf974cd2d
       .from('posts')
       .select('*')
       .eq('id', id)
@@ -270,11 +229,7 @@ export const getPostById = async (id: string): Promise<BlogPost | undefined> => 
 export const getRelatedPosts = async (currentPostId: string, category: string): Promise<BlogPost[]> => {
   try {
     const now = new Date().toISOString();
-<<<<<<< HEAD
     const { data, error } = await insforge.database
-=======
-    const { data, error } = await supabase
->>>>>>> 1d1aced88b08533ee2c64b6cf5e3bc0bf974cd2d
       .from('posts')
       .select('*')
       .or(`status.eq.${PostStatus.PUBLISHED},and(status.eq.${PostStatus.SCHEDULED},scheduled_for.lte.${now})`)
@@ -285,10 +240,6 @@ export const getRelatedPosts = async (currentPostId: string, category: string): 
     if (error) throw error;
     return (data || []).map(mapRowToPost);
   } catch (err) {
-<<<<<<< HEAD
-=======
-    // Fallback
->>>>>>> 1d1aced88b08533ee2c64b6cf5e3bc0bf974cd2d
     return MOCK_POSTS.filter(p => p.id !== currentPostId && p.category === category).slice(0, 3);
   }
 };
@@ -300,46 +251,28 @@ export const savePost = async (post: BlogPost): Promise<BlogPost> => {
 
   const dbRow = mapPostToRow(post);
 
-<<<<<<< HEAD
   const { data, error } = await insforge.database
-=======
-  const { data, error } = await supabase
->>>>>>> 1d1aced88b08533ee2c64b6cf5e3bc0bf974cd2d
     .from('posts')
     .upsert(dbRow)
     .select()
     .single();
 
   if (error) {
-<<<<<<< HEAD
     console.error("InsForge Save Error:", error);
-    // Add more detail to the error message for debugging
     const details = (error as any).details || (error as any).hint || '';
     throw new Error(`${error.message}${details ? ' - ' + details : ''} (Network check: ensure VITE_INSFORGE_URL is accessible)`);
-=======
-    console.error("Supabase Save Error:", error);
-    throw new Error(error.message);
->>>>>>> 1d1aced88b08533ee2c64b6cf5e3bc0bf974cd2d
   }
   return mapRowToPost(data);
 };
 
 export const deletePost = async (id: string): Promise<void> => {
-<<<<<<< HEAD
   const { error } = await insforge.database
-=======
-  const { error } = await supabase
->>>>>>> 1d1aced88b08533ee2c64b6cf5e3bc0bf974cd2d
     .from('posts')
     .delete()
     .eq('id', id);
 
   if (error) {
-<<<<<<< HEAD
     console.error("InsForge Delete Error:", error);
-=======
-    console.error("Supabase Delete Error:", error);
->>>>>>> 1d1aced88b08533ee2c64b6cf5e3bc0bf974cd2d
     throw new Error(error.message);
   }
 };
