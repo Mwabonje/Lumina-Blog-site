@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '../types';
-import { getCurrentUser, logout as serviceLogout } from '../services/authService';
+import { getCurrentUser, login as serviceLogin, logout as serviceLogout } from '../services/authService';
 
 interface AuthContextType {
     user: User | null;
     loading: boolean;
-    login: (user: User) => void;
+    login: (email: string, password: string) => Promise<User>;
     logout: () => Promise<void>;
     refresh: () => Promise<void>;
 }
@@ -33,8 +33,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         refresh();
     }, []);
 
-    const login = (user: User) => {
-        setUser(user);
+    const login = async (email: string, password: string) => {
+        const u = await serviceLogin(email, password);
+        setUser(u);
+        return u;
     };
 
     const logout = async () => {

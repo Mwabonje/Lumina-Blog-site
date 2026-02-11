@@ -19,7 +19,7 @@ const Dashboard = () => {
       setPosts(data);
     } catch (err: any) {
       console.error(err);
-      if (!silent) setError(err.message || 'Failed to connect to Supabase');
+      if (!silent) setError(err.message || 'Failed to connect to InsForge');
     } finally {
       if (!silent) setLoading(false);
     }
@@ -118,7 +118,7 @@ const Dashboard = () => {
               </h3>
               <div className="mt-2 text-sm leading-5 text-red-700">
                 <p>{error}</p>
-                <p className="mt-2 text-xs">Tip: Check your API Key and ensure RLS policies allow 'public' access in Supabase.</p>
+                <p className="mt-2 text-xs">Tip: Check your API Key and ensure connection to InsForge is established.</p>
               </div>
             </div>
           </div>
@@ -178,14 +178,14 @@ const Dashboard = () => {
                       ) : '—'}
                     </td>
                     <td className="p-4 lg:p-5 text-right whitespace-nowrap space-x-2">
-                      <Link 
-                        to={`/admin/posts/${post.id}`} 
+                      <Link
+                        to={`/admin/posts/${post.id}`}
                         className="inline-flex items-center px-3 py-1.5 border border-stone-200 text-xs font-medium rounded-md text-stone-700 bg-white hover:bg-stone-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-blue transition-colors shadow-sm"
                       >
                         Edit
                       </Link>
-                      <button 
-                        onClick={() => handleDelete(post.id)} 
+                      <button
+                        onClick={() => handleDelete(post.id)}
                         className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
                       >
                         Delete
@@ -198,15 +198,15 @@ const Dashboard = () => {
                     <td colSpan={4} className="p-16 text-center text-stone-400">
                       {searchQuery ? (
                         <div className="flex flex-col items-center">
-                           <svg className="w-12 h-12 text-stone-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                           <p className="text-stone-500 font-medium">No results found for "{searchQuery}"</p>
-                           <p className="text-sm mt-1">Try adjusting your search terms.</p>
-                           <button onClick={() => setSearchQuery('')} className="mt-4 text-brand-blue text-sm hover:underline">Clear search</button>
+                          <svg className="w-12 h-12 text-stone-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                          <p className="text-stone-500 font-medium">No results found for "{searchQuery}"</p>
+                          <p className="text-sm mt-1">Try adjusting your search terms.</p>
+                          <button onClick={() => setSearchQuery('')} className="mt-4 text-brand-blue text-sm hover:underline">Clear search</button>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center">
-                           <p>No content yet.</p>
-                           <Link to="/admin/posts/new" className="mt-2 text-brand-blue hover:underline text-sm">Create your first post</Link>
+                          <p>No content yet.</p>
+                          <Link to="/admin/posts/new" className="mt-2 text-brand-blue hover:underline text-sm">Create your first post</Link>
                         </div>
                       )}
                     </td>

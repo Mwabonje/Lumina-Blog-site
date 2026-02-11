@@ -17,20 +17,20 @@ export const generateSEOSuggestions = async (content: string): Promise<AISuggest
     throw new Error("API Key missing. Please configure process.env.API_KEY");
   }
 
-  const model = "gemini-3-flash-preview";
+  const model = "gemini-1.5-flash"; // Updated to flash 1.5
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await (ai as any).models.generateContent({
       model,
       contents: `Analyze the following blog content and generate SEO metadata. 
-      Content: ${content.substring(0, 5000)}...`, // Truncate to avoid huge context usage
+      Content: ${content.substring(0, 5000)}...`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            title: { type: Type.STRING, description: "A catchy, SEO-optimized title (max 60 chars)" },
-            excerpt: { type: Type.STRING, description: "A compelling summary (max 160 chars)" },
+            title: { type: Type.STRING },
+            excerpt: { type: Type.STRING },
             seo: {
               type: Type.OBJECT,
               properties: {
