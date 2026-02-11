@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lumina Blog Platform</title>
+    <meta name="description" content="Digital Marketing Insights" />
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --color-primary: #0f172a;    /* Slate 900 */
+        --color-secondary: #64748b;  /* Slate 500 */
+        --color-tertiary: #94a3b8;   /* Slate 400 */
+        --color-accent: #f59e0b;     /* Amber 500 */
+        --color-background: #f0f9ff; /* Alice Blue */
+        --color-surface: #ffffff;    /* White */
+        --color-brand-blue: #0ea5e9; /* Sky 500 */
+      }
+
+      .dark {
+        --color-primary: #f8fafc;    /* Slate 50 */
+        --color-secondary: #cbd5e1;  /* Slate 300 */
+        --color-tertiary: #64748b;   /* Slate 500 */
+        --color-accent: #fbbf24;     /* Amber 400 */
+        --color-background: #020617; /* Slate 950 */
+        --color-surface: #0f172a;    /* Slate 900 */
+        --color-brand-blue: #38bdf8; /* Sky 400 */
+      }
+
+      body { -webkit-font-smoothing: antialiased; }
+      .admin-scroll::-webkit-scrollbar { width: 6px; }
+      .admin-scroll::-webkit-scrollbar-track { background: transparent; }
+      .admin-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+      
+      /* Smooth transitions for theme switching */
+      body, div, p, h1, h2, h3, h4, h5, h6, span, article {
+        transition-property: background-color, color, border-color;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        transition-duration: 150ms;
+      }
+    </style>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Montserrat', 'sans-serif'],
+              serif: ['Montserrat', 'sans-serif'], 
+            },
+            colors: {
+              primary: 'var(--color-primary)', 
+              secondary: 'var(--color-secondary)', 
+              tertiary: 'var(--color-tertiary)', 
+              accent: 'var(--color-accent)', 
+              background: 'var(--color-background)', 
+              surface: 'var(--color-surface)',
+              'brand-blue': 'var(--color-brand-blue)', 
+            },
+            typography: (theme) => ({
+              DEFAULT: {
+                css: {
+                  color: theme('colors.secondary'),
+                  h1: { fontFamily: theme('fontFamily.sans'), color: theme('colors.primary') },
+                  h2: { fontFamily: theme('fontFamily.sans'), color: theme('colors.primary') },
+                  h3: { fontFamily: theme('fontFamily.sans'), color: theme('colors.primary') },
+                  strong: { color: theme('colors.primary') },
+                  a: { color: theme('colors.brand-blue'), '&:hover': { color: theme('colors.primary') } },
+                  code: { color: theme('colors.accent') },
+                  blockquote: { color: theme('colors.primary'), borderLeftColor: theme('colors.brand-blue') },
+                },
+              },
+            }),
+          }
+        }
+      }
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.37.0",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.12.0",
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.90.1"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-background text-primary">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
