@@ -5,7 +5,11 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
   // Cast process to any to avoid "Property 'cwd' does not exist on type 'Process'" error
   const env = loadEnv(mode, (process as any).cwd(), '');
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> 1d1aced88b08533ee2c64b6cf5e3bc0bf974cd2d
   // Specific defaults for your project
   const defaultUrl = 'https://jvniieomnaeiibrnvidz.supabase.co';
   const defaultKey = 'sb_publishable_EyalFOiT9Y9ozrdbzfBP3Q_Rt5WBbMY';
@@ -15,6 +19,12 @@ export default defineConfig(({ mode }) => {
     define: {
       // Fallback to empty string if undefined to prevent ReferenceError
       'process.env.API_KEY': JSON.stringify(env.API_KEY || ''),
+<<<<<<< HEAD
+=======
+      // Use provided Supabase credentials as default fallbacks
+      'process.env.SUPABASE_URL': JSON.stringify(env.SUPABASE_URL || defaultUrl),
+      'process.env.SUPABASE_ANON_KEY': JSON.stringify(env.SUPABASE_ANON_KEY || defaultKey),
+>>>>>>> 1d1aced88b08533ee2c64b6cf5e3bc0bf974cd2d
       'process.env.ADMIN_EMAIL': JSON.stringify(env.ADMIN_EMAIL || 'admin@lumina.com'),
       'process.env.ADMIN_PASSWORD': JSON.stringify(env.ADMIN_PASSWORD || 'password'),
     }
